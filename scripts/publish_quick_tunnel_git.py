@@ -37,7 +37,6 @@ def publish(url: str, checkout: Path, private_key: Path) -> None:
     _run(["git", "pull", "--ff-only", "origin", "main"], cwd=checkout, env=environment)
     target = checkout / "deployment" / "api-url.txt"
     if target.read_text(encoding="utf-8").strip() == url:
-        print("GitHub Pages already uses this tunnel URL.")
         return
     target.write_text(url + "\n", encoding="utf-8")
     _run(["git", "add", "deployment/api-url.txt"], cwd=checkout, env=environment)
@@ -47,4 +46,3 @@ def publish(url: str, checkout: Path, private_key: Path) -> None:
         "commit", "-m", "chore: update tabletop tunnel URL",
     ], cwd=checkout, env=environment)
     _run(["git", "push", "origin", "main"], cwd=checkout, env=environment)
-    print("Published new tunnel URL to GitHub Pages source.")

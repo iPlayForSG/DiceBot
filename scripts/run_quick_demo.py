@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+from datetime import datetime
 import json
 import os
 from pathlib import Path
@@ -27,6 +28,17 @@ ROOT = Path(__file__).resolve().parents[1]
 TUNNEL_URL = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
 GITHUB_REPOSITORY = "iPlayForSG/DiceBot"
 PROCESS_FLAGS = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+
+def record(message: str) -> None:
+    path = ROOT / "data" / "quick-supervisor.log"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as output:
+        output.write(f"{datetime.now().isoformat(timespec='seconds')} {message}\n")
+    try:
+        print(message, flush=True)
+    except (OSError, AttributeError, ValueError):
+        pass
 
 
 def git_credential() -> str:
@@ -147,16 +159,18 @@ def main() -> None:
                 text=True, encoding="utf-8", errors="replace", creationflags=PROCESS_FLAGS,
             )
             children.append(tunnel)
-            print("实时服务与 QQ Bot 已启动，等待 Cloudflare 临时地址…", flush=True)
+            record("实时服务与 QQ Bot 已启动，等待 Cloudflare 临时地址…")
             published = False
             assert tunnel.stdout is not None
             for line in tunnel.stdout:
                 found = TUNNEL_URL.search(line)
                 if found and not published:
                     url = found.group(0)
-                    print(f"临时实时服务：{url}", flush=True)
+                    (data_dir / "current-tunnel-url.txt").write_text(url + "\n", encoding="utf-8")
+                    record(f"临时实时服务：{url}")
                     if not args.no_publish:
                         publish_tunnel_url(url, settings)
+                        record("GitHub Pages 地址已更新。")
                     published = True
                 if bot.poll() is not None:
                     raise RuntimeError("QQ Bot 已退出，请查看 data/quick-bot.log。")
@@ -164,7 +178,7 @@ def main() -> None:
                     raise RuntimeError("实时服务已退出，请查看 data/quick-api.log。")
             raise RuntimeError("Cloudflare 隧道已结束。")
     except KeyboardInterrupt:
-        print("正在停止临时隧道、实时服务与 QQ Bot…", flush=True)
+        record("正在停止临时隧道、实时服务与 QQ Bot…")
     finally:
         for child in reversed(children):
             if child.poll() is None:
@@ -177,4 +191,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as exc:
+        record(f"ERROR {type(exc).__name__}: {exc}")
+        raise
