@@ -27,6 +27,12 @@ jobs:
             exit 1
           fi
           printf 'window.TABLETOP_API_URL = %s;\n' "$(python -c 'import json,os; print(json.dumps(os.environ["API_URL"]))')" > web/config.js
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          page = Path("web/index.html")
+          page.write_text(page.read_text(encoding="utf-8").replace("build=local", f"build={os.environ['GITHUB_RUN_ID']}"), encoding="utf-8")
+          PY
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
