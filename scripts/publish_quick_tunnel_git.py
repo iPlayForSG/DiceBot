@@ -27,7 +27,7 @@ def publish(url: str, checkout: Path, private_key: Path) -> None:
     checkout.parent.mkdir(parents=True, exist_ok=True)
     environment = {
         **os.environ,
-        "GIT_SSH_COMMAND": f'ssh -i "{private_key}" -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new',
+        "GIT_SSH_COMMAND": f'ssh -i "{private_key}" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes',
         "GIT_TERMINAL_PROMPT": "0",
     }
     if not (checkout / ".git").is_dir():
