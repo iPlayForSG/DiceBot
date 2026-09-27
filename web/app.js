@@ -233,11 +233,15 @@ $("room-form").addEventListener("submit", (event) => {
   const room = $("room-input").value.trim().toUpperCase();
   if (room) location.href = `?room=${encodeURIComponent(room)}`;
 });
-$("copy-command").addEventListener("click", async () => {
+document.querySelectorAll("[data-copy-command]").forEach((button) => button.addEventListener("click", async () => {
   try {
-    await navigator.clipboard.writeText("/桌游 创建 炸弹猫");
+    await navigator.clipboard.writeText(button.dataset.copyCommand);
     notify("组局命令已复制，粘贴到 QQ 群发送即可。");
   } catch { notify("复制失败，请手动复制命令。"); }
+}));
+$("copy-command").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText("/桌游 创建 炸弹猫"); notify("组局命令已复制，粘贴到 QQ 群发送即可。"); }
+  catch { notify("复制失败，请手动复制命令。"); }
 });
 $("copy-link").addEventListener("click", async () => {try {await navigator.clipboard.writeText(location.href); notify("链接已复制。");} catch {notify("复制失败，请从地址栏复制链接。");}});
 $("zoom-card").addEventListener("click", () => showCard(selected[0]));
@@ -275,10 +279,22 @@ $("secondary-action").addEventListener("click", () => {
 
 (async () => {
   if (!code) {$("landing").hidden = false; return;}
-  $("game").hidden = false;
   try {
+    const preview = await request(`/api/rooms/${code}`);
+    if (preview.game && preview.game !== "exploding-kittens") {
+      $("party").hidden = false;
+      await window.startPartyRoom({api: API, code, initial: preview, notify});
+      return;
+    }
+    $("game").hidden = false;
     manifest = await fetch(asset("manifest.json")).then((response) => response.json());
     cards = Object.fromEntries(manifest.cards.map((card) => [card.id,card]));
     await loadRoom();
-  } catch {notify("牌组资源加载失败，请刷新页面。");}
+  } catch (error) {
+    $("game").hidden = true;
+    $("party").hidden = true;
+    $("landing").hidden = false;
+    $("room-input").value = code;
+    notify(error.message || "房间加载失败，请检查房间号后重试。");
+  }
 })();

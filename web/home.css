@@ -74,14 +74,15 @@
 .art-die span:nth-child(4) { left: 22%; bottom: 22%; }
 .art-die span:nth-child(5) { right: 22%; bottom: 22%; }
 
-.game-catalogue { grid-column: 1 / -1; border-top: 1px solid #d9ceba; padding-top: 40px; }
+.game-catalogue { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 15px; border-top: 1px solid #d9ceba; padding-top: 40px; }
 .catalogue-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+.catalogue-heading { grid-column: 1 / -1; }
 .catalogue-heading h2 { font-size: clamp(30px, 3vw, 42px); margin: 7px 0 0; line-height: 1.25; }
 .catalogue-heading p { margin: 0 0 4px; font-size: 14px; }
-.game-entry { display: grid; grid-template-columns: 165px minmax(0, 1fr); max-width: 850px; background: #faf4e9; border: 1px solid #dfcfb5; border-radius: 17px; overflow: hidden; }
+.game-entry { display: grid; grid-template-columns: 125px minmax(0, 1fr); background: #faf4e9; border: 1px solid #dfcfb5; border-radius: 17px; overflow: hidden; }
 .game-art { display: grid; place-items: center; min-height: 214px; background: #235247; overflow: hidden; }
 .game-art img { width: 100px; aspect-ratio: 495 / 693; object-fit: cover; transform: rotate(-8deg); border: 4px solid #f6e9ce; border-radius: 8px; box-shadow: 9px 11px 0 #0b3027; }
-.game-entry-copy { padding: 24px 28px; }
+.game-entry-copy { padding: 20px; }
 .game-entry-top { display: flex; align-items: center; gap: 12px; color: #766a5a; font-size: 12px; }
 .available-tag { padding: 5px 9px; border-radius: 999px; color: #155648; background: #dbede1; font-weight: 700; }
 .game-entry h3 { font-size: 26px; margin: 13px 0 7px; }
@@ -92,6 +93,7 @@
 .game-command button:hover { background: #f1e4ce; }
 .game-command button:focus-visible { outline: 3px solid #de522e; outline-offset: 3px; }
 
+@media (max-width: 900px) { .game-catalogue { grid-template-columns: 1fr; } }
 @media (max-width: 740px) {
   .site-header .header-right { display: none; }
   .landing { display: grid; grid-template-columns: 1fr; gap: 36px; padding: 38px 20px 64px; }

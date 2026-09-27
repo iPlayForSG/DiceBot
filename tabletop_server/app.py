@@ -15,9 +15,10 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from tabletop_server.engine import GameError, GameRoom, Player
+from tabletop_server.party_games import NAMES, PartyRoom
 
 
 load_dotenv()
@@ -39,7 +40,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["Authorization", "Content-Type", "X-Tabletop-Admin"],
 )
-rooms: dict[str, GameRoom] = {}
+rooms: dict[str, GameRoom | PartyRoom] = {}
 connections: dict[str, dict[WebSocket, str]] = {}
 lock = asyncio.Lock()
 
@@ -49,7 +50,7 @@ def _restore() -> None:
         return
     for raw in json.loads(ROOMS_FILE.read_text(encoding="utf-8")):
         raw["players"] = [Player(**player) for player in raw["players"]]
-        room = GameRoom(**raw)
+        room = PartyRoom(**raw) if raw.get("game") in NAMES else GameRoom(**raw)
         rooms[room.code] = room
 
 
@@ -62,7 +63,7 @@ def _save() -> None:
 _restore()
 
 
-def _room(code: str) -> GameRoom:
+def _room(code: str) -> GameRoom | PartyRoom:
     room = rooms.get(code.upper())
     if room is None:
         raise HTTPException(404, "房间不存在或已经结束。")
@@ -76,7 +77,7 @@ def _admin(value: str | None) -> None:
         raise HTTPException(403, "组局服务认证失败。")
 
 
-def _member(room: GameRoom, authorization: str | None) -> Player:
+def _member(room: GameRoom | PartyRoom, authorization: str | None) -> Player:
     token = (authorization or "").removeprefix("Bearer ")
     for player in room.players:
         if player.token and secrets.compare_digest(player.token, token):
@@ -99,7 +100,7 @@ def _avatar(qq_id: str, content: str | None) -> bool:
     return True
 
 
-async def _broadcast(room: GameRoom) -> None:
+async def _broadcast(room: GameRoom | PartyRoom) -> None:
     for websocket, token in list(connections.get(room.code, {}).items()):
         try:
             player = next((p for p in room.players if p.token and secrets.compare_digest(p.token, token)), None)
@@ -121,7 +122,8 @@ class BotPlayer(BaseModel):
 class CreateRoom(BaseModel):
     group_id: str
     player: BotPlayer
-    mode: Literal["basic", "advanced"] = "basic"
+    game: Literal["exploding-kittens", "cubirds", "coup", "splendor", "avalon"] = "exploding-kittens"
+    mode: str = Field(default="basic", max_length=24)
 
 
 class Claim(BaseModel):
@@ -129,6 +131,7 @@ class Claim(BaseModel):
 
 
 class Action(BaseModel):
+    model_config = ConfigDict(extra="allow")
     type: str
     card_id: str | None = None
     second: str | None = None
@@ -156,8 +159,10 @@ async def create_room(payload: CreateRoom, x_tabletop_admin: str | None = Header
             code = "".join(secrets.choice(alphabet) for _ in range(8))
         player = Player(payload.player.qq_id, payload.player.name)
         player.avatar = _avatar(player.qq_id, payload.player.avatar_base64)
-        room = GameRoom(code, payload.group_id, [player], mode=payload.mode)
-        room._record(f"{player.name} 创建了炸弹猫房间。")
+        room = (GameRoom(code, payload.group_id, [player], mode=payload.mode)
+                if payload.game == "exploding-kittens" else
+                PartyRoom(code, payload.group_id, [player], payload.game, mode=payload.mode))
+        room._record(f"{player.name} 创建了{NAMES.get(payload.game, '炸弹猫')}房间。")
         rooms[code] = room
         _save()
     return {"code": code}
@@ -265,7 +270,9 @@ async def act(code: str, payload: Action, authorization: str | None = Header(def
         room = _room(code)
         player = _member(room, authorization)
         try:
-            if payload.type == "draw":
+            if isinstance(room, PartyRoom):
+                room.action(player.qq_id, payload.model_dump(exclude_none=True))
+            elif payload.type == "draw":
                 room.draw(player.qq_id)
             elif payload.type == "play":
                 room.play(player.qq_id, payload.card_id or "", payload.target, payload.second)

@@ -324,7 +324,7 @@ class GameRoom:
     def view(self, qq_id: str | None = None) -> dict:
         me = self.player(qq_id) if qq_id else None
         return {
-            "code": self.code, "mode": self.mode, "phase": self.phase, "revision": self.revision,
+            "code": self.code, "game": "exploding-kittens", "mode": self.mode, "phase": self.phase, "revision": self.revision,
             "players": [{"id": p.qq_id, "name": p.name, "alive": p.alive,
                          "cards": len(p.hand), "avatar": p.avatar, "claimed": bool(p.token)} for p in self.players],
             "current": self.active.qq_id if self.phase != "lobby" else None,

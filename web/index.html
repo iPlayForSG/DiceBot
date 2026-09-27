@@ -9,8 +9,10 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./style.css?build=local">
   <link rel="stylesheet" href="./home.css?build=local">
+  <link rel="stylesheet" href="./party.css?build=local">
   <script src="./config.js?build=local" defer></script>
   <script src="./app.js?build=local" defer></script>
+  <script src="./party.js?build=local" defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -35,13 +37,19 @@
       <div class="art-die"><span></span><span></span><span></span><span></span><span></span></div>
     </div>
     <section id="games" class="game-catalogue" aria-labelledby="games-title">
-      <div class="catalogue-heading"><div><span class="eyebrow">游戏库</span><h2 id="games-title">今晚玩什么？</h2></div><p>目前开放 1 款桌游；后续游戏会继续加入这里。</p></div>
+      <div class="catalogue-heading"><div><span class="eyebrow">游戏库</span><h2 id="games-title">今晚玩什么？</h2></div><p>目前开放 5 款桌游；后续游戏会继续加入这里。</p></div>
       <article class="game-entry">
         <div class="game-art"><img src="./public/assets/exploding-kittens/card-back.jpg" alt="炸弹猫牌背"></div>
         <div class="game-entry-copy"><div class="game-entry-top"><span class="available-tag">已开放</span><span>2–5 人 · 卡牌</span></div><h3>炸弹猫</h3><p>轮流出牌与抽牌，靠拆弹和反制留在牌局里。支持基础版与进阶组合。</p><div class="game-command"><code>/桌游 创建 炸弹猫</code><button id="copy-command" type="button">复制组局命令</button></div></div>
       </article>
+      <article class="game-entry"><div class="game-art"><img src="./public/assets/cubirds/cards/deck-1-20.webp" alt="方·鸟卡牌"></div><div class="game-entry-copy"><div class="game-entry-top"><span class="available-tag">已开放</span><span>2–5 人 · 卡牌</span></div><h3>方·鸟 CuBirds</h3><p>在四排鸟牌之间摆出鸟群，收集不同物种或同种鸟。</p><div class="game-command"><code>/桌游 创建 方·鸟</code><button type="button" data-copy-command="/桌游 创建 方·鸟">复制组局命令</button></div></div></article>
+      <article class="game-entry"><div class="game-art"><img src="./public/assets/coup/cards/deck-3-00.webp" alt="政变角色卡"></div><div class="game-entry-copy"><div class="game-entry-top"><span class="available-tag">已开放</span><span>2–10 人 · 虚张声势</span></div><h3>政变</h3><p>保住影响牌，宣称角色能力；可用「扩展」开启阵营与判官。</p><div class="game-command"><code>/桌游 创建 政变 扩展</code><button type="button" data-copy-command="/桌游 创建 政变 扩展">复制组局命令</button></div></div></article>
+      <article class="game-entry"><div class="game-art"><img src="./public/assets/splendor/cards/deck-5-15.webp" alt="璀璨宝石发展卡"></div><div class="game-entry-copy"><div class="game-entry-top"><span class="available-tag">已开放</span><span>2–4 人 · 资源经营</span></div><h3>璀璨宝石</h3><p>领取宝石、购买发展卡，吸引贵族并争取 15 分。</p><div class="game-command"><code>/桌游 创建 璀璨宝石</code><button type="button" data-copy-command="/桌游 创建 璀璨宝石">复制组局命令</button></div></div></article>
+      <article class="game-entry"><div class="game-art"><img src="./public/assets/avalon/cards/deck-3-09.webp" alt="阿瓦隆身份牌"></div><div class="game-entry-copy"><div class="game-entry-top"><span class="available-tag">已开放</span><span>5–10 人 · 隐藏身份</span></div><h3>阿瓦隆</h3><p>秘密身份、队伍表决与任务投票。进阶模式加入特殊角色。</p><div class="game-command"><code>/桌游 创建 阿瓦隆 进阶</code><button type="button" data-copy-command="/桌游 创建 阿瓦隆 进阶">复制组局命令</button></div></div></article>
     </section>
   </main>
+
+  <main id="party" class="party-layout" hidden aria-label="桌游牌桌"></main>
 
   <main id="game" class="game-layout" hidden>
     <aside class="left-rail">

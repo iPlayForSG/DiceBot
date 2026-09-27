@@ -8,9 +8,21 @@ from nonebot.params import CommandArg
 from dicebot import web_bridge
 
 
+GAMES = {
+    "炸弹猫": ("exploding-kittens", "炸弹猫", "2–5"),
+    "方·鸟": ("cubirds", "方·鸟", "2–5"),
+    "方鸟": ("cubirds", "方·鸟", "2–5"),
+    "CuBirds": ("cubirds", "方·鸟", "2–5"),
+    "政变": ("coup", "政变", "2–10"),
+    "璀璨宝石": ("splendor", "璀璨宝石", "2–4"),
+    "阿瓦隆": ("avalon", "阿瓦隆", "5–10"),
+}
+GAME_NAMES = {game: name for game, name, _ in GAMES.values()}
+GAME_LIMITS = {game: limit for game, _, limit in GAMES.values()}
 HELP = (
-    "QQ 组局命令（炸弹猫，2–5 人）：\n"
-    "/桌游 创建 炸弹猫 [进阶]\n"
+    "QQ 组局命令：\n"
+    "/桌游 列表\n"
+    "/桌游 创建 <游戏名> [进阶/扩展]\n"
     "/桌游 加入｜离开｜开始｜状态｜结束\n"
     "游戏在网站中进行，玩家进入链接后自行选择自己的 QQ 头像和 ID。"
 )
@@ -32,17 +44,21 @@ async def handle_tabletop(event: MessageEvent, args: Message = CommandArg()) -> 
         if command in {"帮助", "help"}:
             reply = HELP
         elif command == "列表":
-            reply = "当前可玩：炸弹猫（2–5 人）。发送 /桌游 创建 炸弹猫。"
+            reply = "当前可玩：炸弹猫（2–5 人）、方·鸟（2–5 人）、政变（2–10 人）、璀璨宝石（2–4 人）、阿瓦隆（5–10 人）。\n发送 /桌游 创建 <游戏名>。"
         elif command == "创建":
-            if len(parts) < 2 or parts[1] != "炸弹猫":
-                reply = "用法：/桌游 创建 炸弹猫"
+            if len(parts) < 2 or parts[1] not in GAMES:
+                reply = "用法：/桌游 创建 炸弹猫｜方·鸟｜政变｜璀璨宝石｜阿瓦隆"
             else:
-                mode = "advanced" if len(parts) > 2 and parts[2] == "进阶" else "basic"
-                data = await web_bridge.create(group_id, user_id, name, mode)
-                reply = f"炸弹猫{'进阶' if mode == 'advanced' else '基础'}房间已创建，房主 {name}。\n发送 /桌游 加入。\n游玩链接：{web_bridge.link(data['code'])}"
+                game, game_name, limit = GAMES[parts[1]]
+                variant = parts[2] if len(parts) > 2 else ""
+                mode = "advanced" if game in {"exploding-kittens", "avalon"} and variant == "进阶" else "reformation" if game == "coup" and variant == "扩展" else "basic"
+                data = await web_bridge.create(group_id, user_id, name, game, mode)
+                reply = f"{game_name}{'扩展' if mode == 'reformation' else '进阶' if mode == 'advanced' else ''}房间已创建，房主 {name}。\n支持 {limit} 人；发送 /桌游 加入。\n游玩链接：{web_bridge.link(data['code'])}"
         else:
             room = await web_bridge.group(group_id)
             code = room["code"]
+            game = room.get("game", "exploding-kittens")
+            game_name = GAME_NAMES.get(game, "炸弹猫")
             players = room["players"]
             owner = players[0]["id"] if players else ""
             if command == "加入":
@@ -56,10 +72,10 @@ async def handle_tabletop(event: MessageEvent, args: Message = CommandArg()) -> 
                     reply = "只有房主可以开始游戏。"
                 else:
                     await web_bridge.start(code)
-                    reply = f"炸弹猫开始！请在网站选择自己的头像进入：\n{web_bridge.link(code)}"
+                    reply = f"{game_name}开始！请在网站选择自己的头像进入：\n{web_bridge.link(code)}"
             elif command == "状态":
                 names = "、".join(player["name"] for player in players)
-                reply = f"炸弹猫{'进阶' if room['mode'] == 'advanced' else '基础'}｜{room['phase']}｜{len(players)}/5 人\n玩家：{names}\n游玩链接：{web_bridge.link(code)}"
+                reply = f"{game_name}｜{room['phase']}｜{len(players)}/{GAME_LIMITS.get(game, '5').split('–')[-1]} 人\n玩家：{names}\n游玩链接：{web_bridge.link(code)}"
             elif command == "结束":
                 if user_id != owner:
                     reply = "只有房主可以结束房间。"
