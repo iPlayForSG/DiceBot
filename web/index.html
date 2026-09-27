@@ -59,6 +59,11 @@
       <div id="action-panel" class="action-panel" hidden>
         <h2>本回合操作</h2>
         <label for="target">指定玩家</label><select id="target"><option value="">选择玩家</option></select>
+        <div id="combo-panel" hidden>
+          <div id="declared-row" hidden><label for="declared">声明想要的牌</label><select id="declared"><option value="">选择牌名</option></select></div>
+          <div id="retrieve-row" hidden><label for="retrieve">从弃牌堆取回</label><select id="retrieve"><option value="">选择弃牌</option></select><img id="retrieve-preview" alt="所选弃牌的牌面" hidden></div>
+          <p id="combo-hint" class="action-hint"></p>
+        </div>
         <div id="position-row" hidden><label for="position">炸弹放回位置</label><input id="position" type="number" min="0" value="0"><small>0 = 牌堆顶；数字越大越靠近牌堆底</small></div>
         <button id="primary-action" class="primary-action" type="button">抽一张</button>
         <button id="secondary-action" class="secondary-action" type="button" hidden>出牌</button>

@@ -4,7 +4,10 @@ const code = (params.get("room") || "").trim().toUpperCase();
 const $ = (id) => document.getElementById(id);
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]);
 const asset = (file) => `./public/assets/exploding-kittens/${file}`;
-const labels = {bomb:"炸弹猫咪",defuse:"拆弹",attack:"攻击",skip:"跳过",shuffle:"洗牌",see:"预知",favor:"帮帮忙",nope:"不行",cat:"猫牌"};
+const labels = {bomb:"炸弹猫咪",defuse:"拆弹",attack:"攻击",skip:"跳过",shuffle:"洗牌",see:"预知",favor:"帮帮忙",nope:"不行",cat:"猫牌",pair:"两张组合",triple:"三张组合",five:"五张组合"};
+const catNames = {4:"西瓜猫",5:"饼猫饼",6:"土豆猫",7:"胡子猫",8:"彩虹猫"};
+const signature = (id) => cards[id].kind === "cat" ? `cat:${cards[id].face}` : cards[id].kind;
+const signatureLabel = (value) => value.startsWith("cat:") ? catNames[Number(value.slice(4))] : labels[value];
 let manifest = null;
 let cards = {};
 let state = null;
@@ -51,7 +54,7 @@ function renderPlayers() {
   $("players").innerHTML = state.players.map((player) => `
     <div class="player ${state.current === player.id ? "current" : ""} ${player.alive ? "" : "dead"}">
       ${avatar(player)}<div class="player-meta"><strong>${escapeHtml(player.name)}</strong>
-      <small>${!player.alive ? "已出局" : state.current === player.id ? "轮到我" : `${player.cards} 张手牌`}</small></div>
+      <small>${!player.alive ? "已出局" : state.current === player.id ? (state.me?.id === player.id ? "轮到我" : "正在行动") : `${player.cards} 张手牌`}</small></div>
     </div>`).join("");
   const eligible = state.players.filter((player) => player.alive && player.id !== state.me?.id);
   const oldTarget = $("target").value;
@@ -93,7 +96,8 @@ function renderHand() {
     const id = button.dataset.id;
     if (selected.includes(id)) selected = selected.filter((value) => value !== id);
     else if (selected.length === 0) selected = [id];
-    else if (selected.length === 1 && cards[id].kind === "cat" && cards[selected[0]].kind === "cat") selected.push(id);
+    else if (state.mode === "advanced" && selected.length < 5) selected.push(id);
+    else if (state.mode !== "advanced" && selected.length === 1 && cards[id].kind === "cat" && cards[selected[0]].kind === "cat") selected.push(id);
     else selected = [id];
     renderHand();
     renderActions();
@@ -110,12 +114,36 @@ function showCard(id) {
   $("card-dialog").showModal();
 }
 
+function renderCombo() {
+  const combo = selected.length > 1;
+  const count = selected.length;
+  $("combo-panel").hidden = !combo || state.mode !== "advanced";
+  $("declared-row").hidden = count !== 3;
+  $("retrieve-row").hidden = count !== 5;
+  if (count === 3) {
+    const old = $("declared").value;
+    const unique = [...new Set(manifest.cards.filter((card) => card.kind !== "bomb").map((card) => signature(card.id)))];
+    $("declared").innerHTML = `<option value="">选择牌名</option>${unique.map((name) => `<option value="${name}">${signatureLabel(name)}</option>`).join("")}`;
+    if (unique.includes(old)) $("declared").value = old;
+  }
+  if (count === 5) {
+    const old = $("retrieve").value;
+    $("retrieve").innerHTML = `<option value="">选择弃牌</option>${state.discardCards.map((id, index) => `<option value="${id}">${labels[cards[id].kind]} · 第 ${index + 1} 张</option>`).join("")}`;
+    if (state.discardCards.includes(old)) $("retrieve").value = old;
+    const preview = cards[$("retrieve").value];
+    $("retrieve-preview").hidden = !preview;
+    if (preview) $("retrieve-preview").src = asset(preview.image);
+  }
+  $("combo-hint").textContent = count === 2 ? "两张相同牌：随机抽对方一张。" : count === 3 ? "三张相同牌：声明牌名，若对方有则交出。" : count === 5 ? "五张不同牌：取回弃牌堆中一张。" : "继续选择至五张不同的牌。";
+}
+
 function renderActions() {
   $("action-panel").hidden = !state.me || state.phase !== "playing" || !state.me.hand;
   const primary = $("primary-action"), secondary = $("secondary-action"), hint = $("action-hint");
   const myTurn = state.current === state.me?.id;
   const pending = state.pending, awaiting = state.awaiting;
   const card = selected.length ? cards[selected[0]] : null;
+  renderCombo();
   $("position-row").hidden = awaiting?.kind !== "defuse" || awaiting.actor !== state.me?.id;
   $("position").max = state.deckCount;
   primary.disabled = false;
@@ -133,8 +161,13 @@ function renderActions() {
   } else {
     primary.textContent = state.drawsDue > 1 ? `抽一张（还需 ${state.drawsDue} 次）` : "抽一张";
     primary.disabled = !myTurn;
-    secondary.hidden = !myTurn || !card || ["bomb","defuse","nope"].includes(card.kind);
-    secondary.textContent = card?.kind === "cat" ? "打出一对猫牌" : `打出「${card ? labels[card.kind] : "卡牌"}」`;
+    const comboCount = selected.length;
+    const signatures = selected.map(signature);
+    const validCombo = comboCount === 2 && new Set(signatures).size === 1 && (state.mode === "advanced" || card?.kind === "cat")
+      || comboCount === 3 && state.mode === "advanced" && new Set(signatures).size === 1
+      || comboCount === 5 && state.mode === "advanced" && new Set(signatures).size === 5 && state.discardCards.length > 0;
+    secondary.hidden = !myTurn || !card || (comboCount === 1 && ["bomb","defuse","nope","cat"].includes(card.kind)) || (comboCount > 1 && !validCombo);
+    secondary.textContent = comboCount > 1 ? `打出 ${comboCount} 张组合` : `打出「${card ? labels[card.kind] : "卡牌"}」`;
     hint.textContent = myTurn ? "可以连续出牌，抽牌才会结束一次回合。" : "等待当前玩家行动。";
   }
 }
@@ -142,7 +175,7 @@ function renderActions() {
 function render(next) {
   state = next;
   $("room-code").textContent = code;
-  $("phase-label").textContent = state.phase === "lobby" ? "等待开局" : state.phase === "playing" ? "游戏进行中" : "游戏结束";
+  $("phase-label").textContent = `${state.mode === "advanced" ? "进阶" : "基础"} · ${state.phase === "lobby" ? "等待开局" : state.phase === "playing" ? "游戏进行中" : "游戏结束"}`;
   $("deck-count").textContent = `${state.deckCount} 张`;
   $("discard-count").textContent = `${state.discardCount} 张`;
   const top = state.discard ? cards[state.discard] : null;
@@ -189,7 +222,7 @@ async function loadRoom() {
 }
 
 async function submitAction(payload) {
-  try { await request(`/api/rooms/${code}/actions`, {method:"POST",body:JSON.stringify(payload)}); selected = []; }
+  try { await request(`/api/rooms/${code}/actions`, {method:"POST",body:JSON.stringify(payload)}); selected = []; if (state) {renderHand(); renderActions();} }
   catch (error) { notify(error.message); }
 }
 
@@ -202,6 +235,11 @@ $("room-form").addEventListener("submit", (event) => {
 });
 $("copy-link").addEventListener("click", async () => {try {await navigator.clipboard.writeText(location.href); notify("链接已复制。");} catch {notify("复制失败，请从地址栏复制链接。");}});
 $("zoom-card").addEventListener("click", () => showCard(selected[0]));
+$("retrieve").addEventListener("change", () => {
+  const card = cards[$("retrieve").value];
+  $("retrieve-preview").hidden = !card;
+  if (card) $("retrieve-preview").src = asset(card.image);
+});
 $("deck").addEventListener("click", () => {if (state?.current === state.me?.id && !state.pending && !state.awaiting) submitAction({type:"draw"});});
 $("primary-action").addEventListener("click", () => {
   if (!state?.me) return;
@@ -219,9 +257,14 @@ $("secondary-action").addEventListener("click", () => {
   const card = selectedCard();
   if (!card) return;
   const target = $("target").value || null;
-  if (["cat","favor"].includes(card.kind) && !target) return notify("请先指定一位玩家。");
-  if (card.kind === "cat" && selected.length !== 2) return notify("请选择两张相同的猫牌。");
-  submitAction({type:"play",card_id:selected[0],second:selected[1] || null,target});
+  if (selected.length > 1) {
+    if (selected.length !== 5 && !target) return notify("请先指定一位玩家。");
+    if (selected.length === 3 && !$("declared").value) return notify("请声明要索取的牌名。");
+    if (selected.length === 5 && !$("retrieve").value) return notify("请选择要取回的弃牌。");
+    return submitAction({type:"combo",cards:selected,target,declared:$("declared").value || null,retrieve:$("retrieve").value || null});
+  }
+  if (card.kind === "favor" && !target) return notify("请先指定一位玩家。");
+  submitAction({type:"play",card_id:selected[0],target});
 });
 
 (async () => {

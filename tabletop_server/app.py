@@ -9,7 +9,7 @@ import json
 import os
 from pathlib import Path
 import secrets
-from typing import Any
+from typing import Any, Literal
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
@@ -121,6 +121,7 @@ class BotPlayer(BaseModel):
 class CreateRoom(BaseModel):
     group_id: str
     player: BotPlayer
+    mode: Literal["basic", "advanced"] = "basic"
 
 
 class Claim(BaseModel):
@@ -133,6 +134,9 @@ class Action(BaseModel):
     second: str | None = None
     target: str | None = None
     position: int | None = None
+    cards: list[str] | None = None
+    declared: str | None = None
+    retrieve: str | None = None
 
 
 @app.get("/api/health")
@@ -152,7 +156,7 @@ async def create_room(payload: CreateRoom, x_tabletop_admin: str | None = Header
             code = "".join(secrets.choice(alphabet) for _ in range(8))
         player = Player(payload.player.qq_id, payload.player.name)
         player.avatar = _avatar(player.qq_id, payload.player.avatar_base64)
-        room = GameRoom(code, payload.group_id, [player])
+        room = GameRoom(code, payload.group_id, [player], mode=payload.mode)
         room._record(f"{player.name} 创建了炸弹猫房间。")
         rooms[code] = room
         _save()
@@ -265,6 +269,8 @@ async def act(code: str, payload: Action, authorization: str | None = Header(def
                 room.draw(player.qq_id)
             elif payload.type == "play":
                 room.play(player.qq_id, payload.card_id or "", payload.target, payload.second)
+            elif payload.type == "combo":
+                room.play_combo(player.qq_id, payload.cards or [], payload.target, payload.declared, payload.retrieve)
             elif payload.type == "nope":
                 room.nope(player.qq_id, payload.card_id or "")
             elif payload.type == "resolve":

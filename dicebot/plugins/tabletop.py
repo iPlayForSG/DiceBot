@@ -10,7 +10,7 @@ from dicebot import web_bridge
 
 HELP = (
     "QQ 组局命令（炸弹猫，2–5 人）：\n"
-    "/桌游 创建 炸弹猫\n"
+    "/桌游 创建 炸弹猫 [进阶]\n"
     "/桌游 加入｜离开｜开始｜状态｜结束\n"
     "游戏在网站中进行，玩家进入链接后自行选择自己的 QQ 头像和 ID。"
 )
@@ -37,8 +37,9 @@ async def handle_tabletop(event: MessageEvent, args: Message = CommandArg()) -> 
             if len(parts) < 2 or parts[1] != "炸弹猫":
                 reply = "用法：/桌游 创建 炸弹猫"
             else:
-                data = await web_bridge.create(group_id, user_id, name)
-                reply = f"炸弹猫房间已创建，房主 {name}。\n发送 /桌游 加入。\n游玩链接：{web_bridge.link(data['code'])}"
+                mode = "advanced" if len(parts) > 2 and parts[2] == "进阶" else "basic"
+                data = await web_bridge.create(group_id, user_id, name, mode)
+                reply = f"炸弹猫{'进阶' if mode == 'advanced' else '基础'}房间已创建，房主 {name}。\n发送 /桌游 加入。\n游玩链接：{web_bridge.link(data['code'])}"
         else:
             room = await web_bridge.group(group_id)
             code = room["code"]
@@ -58,7 +59,7 @@ async def handle_tabletop(event: MessageEvent, args: Message = CommandArg()) -> 
                     reply = f"炸弹猫开始！请在网站选择自己的头像进入：\n{web_bridge.link(code)}"
             elif command == "状态":
                 names = "、".join(player["name"] for player in players)
-                reply = f"炸弹猫｜{room['phase']}｜{len(players)}/5 人\n玩家：{names}\n游玩链接：{web_bridge.link(code)}"
+                reply = f"炸弹猫{'进阶' if room['mode'] == 'advanced' else '基础'}｜{room['phase']}｜{len(players)}/5 人\n玩家：{names}\n游玩链接：{web_bridge.link(code)}"
             elif command == "结束":
                 if user_id != owner:
                     reply = "只有房主可以结束房间。"

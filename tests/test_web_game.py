@@ -50,3 +50,34 @@ def test_bomb_defuse_reinsert_is_private() -> None:
     room.defuse(actor.qq_id, 0)
     assert room.deck[-1] == bomb
     assert room.active.qq_id != actor.qq_id
+
+
+def test_advanced_combinations() -> None:
+    by_kind = lambda kind: [card_id for card_id, card in CARDS.items() if card["kind"] == kind]
+    actor = Player("10001", "甲")
+    target = Player("10002", "乙")
+    room = GameRoom("ADVANCED", "123", [actor, target], mode="advanced", phase="playing")
+    actor.hand = by_kind("attack")[:3] + by_kind("skip")[:1] + by_kind("see")[:1] + by_kind("favor")[:1] + by_kind("shuffle")[:1]
+    target.hand = by_kind("defuse")[:1] + by_kind("nope")[:1]
+    room.discard = by_kind("cat")[:1]
+
+    room.play_combo(actor.qq_id, actor.hand[:2], target.qq_id)
+    room.resolve(actor.qq_id, random.Random(1))
+    assert len(actor.hand) == 6  # two discarded, one stolen
+    assert len(target.hand) == 1
+
+    # Return an attack card to construct a valid three-of-a-kind.
+    actor.hand.extend(by_kind("attack")[:2])
+    target.hand.extend(by_kind("skip")[:1])
+    triples = [id_ for id_ in actor.hand if CARDS[id_]["kind"] == "attack"][:3]
+    room.play_combo(actor.qq_id, triples, target.qq_id, declared="skip")
+    room.resolve(actor.qq_id)
+    assert not any(CARDS[id_]["kind"] == "skip" for id_ in target.hand)
+
+    actor.hand.append(by_kind("attack")[3])
+    unique = [next(id_ for id_ in actor.hand if CARDS[id_]["kind"] == kind) for kind in ("attack", "skip", "see", "favor", "shuffle")]
+    retrieved = room.discard[0]
+    room.play_combo(actor.qq_id, unique, retrieve=retrieved)
+    room.resolve(actor.qq_id)
+    assert retrieved in actor.hand
+    assert retrieved not in room.discard

@@ -59,8 +59,8 @@ def link(code: str) -> str:
     return f"{PUBLIC_URL}/?{urlencode({'room': code})}"
 
 
-async def create(group_id: str, qq_id: str, name: str) -> dict:
-    return await _request("POST", "/api/bot/rooms", {"group_id": group_id, "player": await _person(qq_id, name)})
+async def create(group_id: str, qq_id: str, name: str, mode: str = "basic") -> dict:
+    return await _request("POST", "/api/bot/rooms", {"group_id": group_id, "player": await _person(qq_id, name), "mode": mode})
 
 
 async def group(group_id: str) -> dict:

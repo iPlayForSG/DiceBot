@@ -44,6 +44,7 @@ class GameRoom:
     code: str
     group_id: str
     players: list[Player]
+    mode: str = "basic"
     phase: str = "lobby"
     deck: list[str] = field(default_factory=list)
     discard: list[str] = field(default_factory=list)
@@ -124,6 +125,11 @@ class GameRoom:
         player.hand.remove(card_id)
         return kind
 
+    @staticmethod
+    def _signature(card_id: str) -> str:
+        card = CARDS[card_id]
+        return f"cat:{card['face']}" if card["kind"] == "cat" else card["kind"]
+
     def play(self, qq_id: str, card_id: str, target: str | None = None, second: str | None = None) -> None:
         player = self.player(qq_id)
         if self.phase != "playing":
@@ -152,6 +158,45 @@ class GameRoom:
         self.discard.append(card_id)
         self.pending = {"actor": qq_id, "kind": kind, "target": target, "nopes": 0}
         self._record(f"{player.name} 打出{LABELS[kind]}。其他玩家可以打出「不行」反制。")
+
+    def play_combo(
+        self, qq_id: str, card_ids: list[str], target: str | None = None,
+        declared: str | None = None, retrieve: str | None = None,
+    ) -> None:
+        player = self.player(qq_id)
+        if self.phase != "playing" or player != self.active or self.pending or self.awaiting:
+            raise GameError("现在不能打出组合。")
+        if len(card_ids) not in (2, 3, 5) or len(set(card_ids)) != len(card_ids):
+            raise GameError("组合必须是 2、3 或 5 张不同的实体牌。")
+        if any(card_id not in player.hand for card_id in card_ids):
+            raise GameError("所选卡牌不都在你的手牌里。")
+        signatures = [self._signature(card_id) for card_id in card_ids]
+        count = len(card_ids)
+        if self.mode == "basic" and (count != 2 or not signatures[0].startswith("cat:")):
+            raise GameError("基础版只能用两张相同猫牌组成组合。")
+        if count in (2, 3):
+            if len(set(signatures)) != 1:
+                raise GameError("两张或三张组合必须是相同的牌。")
+            other = self.player(target or "")
+            if other == player or not other.alive:
+                raise GameError("请选择另一位仍在游戏中的玩家。")
+        elif len(set(signatures)) != 5:
+            raise GameError("五张组合必须各不相同。")
+        if count == 3:
+            if self.mode != "advanced" or declared not in {self._signature(id_) for id_ in CARDS}:
+                raise GameError("请选择要索取的有效牌名。")
+        if count == 5:
+            if self.mode != "advanced" or not retrieve or retrieve not in self.discard:
+                raise GameError("请选择一张已有的弃牌。")
+        for card_id in card_ids:
+            player.hand.remove(card_id)
+            self.discard.append(card_id)
+        kind = {2: "pair", 3: "triple", 5: "five"}[count]
+        self.pending = {
+            "actor": qq_id, "kind": kind, "target": target,
+            "declared": declared, "retrieve": retrieve, "nopes": 0,
+        }
+        self._record(f"{player.name} 打出{count}张牌组合。其他玩家可以打出「不行」反制。")
 
     def nope(self, qq_id: str, card_id: str) -> None:
         player = self.player(qq_id)
@@ -200,6 +245,29 @@ class GameRoom:
                 self._record(f"{actor.name} 从 {target.name} 手中随机抽走一张牌。")
             else:
                 self._record(f"{target.name} 没有手牌可抽。")
+        elif kind == "pair":
+            target = self.player(pending["target"])
+            if target.hand:
+                stolen = (rng or random.SystemRandom()).choice(target.hand)
+                target.hand.remove(stolen)
+                actor.hand.append(stolen)
+                self._record(f"{actor.name} 从 {target.name} 手中随机抽走一张牌。")
+            else:
+                self._record(f"{target.name} 没有手牌可抽。")
+        elif kind == "triple":
+            target = self.player(pending["target"])
+            found = next((id_ for id_ in target.hand if self._signature(id_) == pending["declared"]), None)
+            if found:
+                target.hand.remove(found)
+                actor.hand.append(found)
+                self._record(f"{target.name} 交出了声明的牌。")
+            else:
+                self._record(f"{target.name} 没有声明的牌。")
+        elif kind == "five":
+            retrieved = pending["retrieve"]
+            self.discard.remove(retrieved)
+            actor.hand.append(retrieved)
+            self._record(f"{actor.name} 从弃牌堆取回一张牌。")
 
     def give(self, qq_id: str, card_id: str) -> None:
         if not self.awaiting or self.awaiting["kind"] != "favor" or self.awaiting["target"] != qq_id:
@@ -256,13 +324,14 @@ class GameRoom:
     def view(self, qq_id: str | None = None) -> dict:
         me = self.player(qq_id) if qq_id else None
         return {
-            "code": self.code, "phase": self.phase, "revision": self.revision,
+            "code": self.code, "mode": self.mode, "phase": self.phase, "revision": self.revision,
             "players": [{"id": p.qq_id, "name": p.name, "alive": p.alive,
                          "cards": len(p.hand), "avatar": p.avatar, "claimed": bool(p.token)} for p in self.players],
             "current": self.active.qq_id if self.phase != "lobby" else None,
             "drawsDue": self.draws_due if self.phase == "playing" else 0,
             "deckCount": len(self.deck), "discard": self.discard[-1] if self.discard else None,
-            "discardCount": len(self.discard), "pending": self.pending, "awaiting": (
+            "discardCount": len(self.discard), "discardCards": self.discard,
+            "pending": self.pending, "awaiting": (
                 {key: value for key, value in self.awaiting.items() if key != "bomb"}
                 if self.awaiting else None
             ), "log": self.log[-16:],
