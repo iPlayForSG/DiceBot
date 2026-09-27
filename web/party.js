@@ -109,13 +109,15 @@ window.startPartyRoom = async function startPartyRoom({api, code, initial, notif
 
   function splendorBoard() {
     const state = view.state, me = view.me, current = view.current === me?.id;
-    const cardBox = (id, tier, reserved = false) => `<div class="market-card">${imageCard(id)}${current ? `<div><button data-action="s-buy" data-card="${id}" data-tier="${tier}">购买</button>${reserved ? "" : `<button data-action="s-reserve" data-card="${id}" data-tier="${tier}">保留</button>`}</div>` : ""}</div>`;
+    const canAct = current && !state.pending_noble?.length;
+    const cardBox = (id, tier, reserved = false) => `<div class="market-card">${imageCard(id)}${canAct ? `<div><button data-action="s-buy" data-card="${id}" data-tier="${tier}">购买</button>${reserved ? "" : `<button data-action="s-reserve" data-card="${id}" data-tier="${tier}">保留</button>`}</div>` : ""}</div>`;
     return `<section class="party-panel"><h2>宝石供应</h2><div class="gem-bank">${Object.entries(state.bank || {}).map(([color,count]) => `<span class="gem gem-${color}">${gemNames[color]} ${count}</span>`).join("")}</div></section>
-      <section class="party-panel"><h2>发展卡市场</h2>${[3,2,1].map((tier) => `<div class="market-tier"><h3>${tier} 级 · 牌堆剩余 ${state.decks?.[tier] ?? 0} 张</h3><div class="market-grid">${(state.market?.[tier] || []).map((id) => cardBox(id,tier)).join("")}</div>${current ? `<button data-action="s-blind" data-tier="${tier}">盲抽保留</button>` : ""}</div>`).join("")}</section>
+      <section class="party-panel"><h2>发展卡市场</h2>${[3,2,1].map((tier) => `<div class="market-tier"><h3>${tier} 级 · 牌堆剩余 ${state.decks?.[tier] ?? 0} 张</h3><div class="market-grid">${(state.market?.[tier] || []).map((id) => cardBox(id,tier)).join("")}</div>${canAct ? `<button data-action="s-blind" data-tier="${tier}">盲抽保留</button>` : ""}</div>`).join("")}</section>
       <section class="party-panel"><h2>贵族</h2><div class="party-card-strip">${(state.nobles || []).map((id) => `<figure class="party-card">${img(nobles[id]?.image,"贵族卡")}</figure>`).join("")}</div></section>
       <section class="party-panel"><h2>玩家进度</h2><div class="party-stats">${view.players.map((p) => {const built=state.built?.[p.id] || [];const points=built.reduce((n,id)=>n+(splendorCards[id]?.points||0),0)+3*(state.claimed?.[p.id]?.length||0);return `<div><strong>${escape(p.name)} · ${points} 分</strong><span>${built.length} 张发展卡 · ${state.claimed?.[p.id]?.length||0} 位贵族 · ${typeof state.reserved?.[p.id] === "number" ? state.reserved[p.id] : state.reserved?.[p.id]?.length||0} 张保留牌</span></div>`;}).join("")}</div></section>
       ${me ? `<section class="party-panel"><h2>我的宝石与保留牌</h2><div class="gem-bank">${Object.entries(state.hold?.[me.id] || {}).map(([color,count]) => `<span class="gem gem-${color}">${gemNames[color]} ${count}</span>`).join("")}</div><div class="market-grid">${(state.reserved?.[me.id] || []).map((id) => cardBox(id,splendorCards[id]?.tier || 1,true)).join("")}</div></section>` : ""}
-      ${current ? `<section class="party-panel party-controls"><h2>领取宝石</h2><form data-action="s-take"><p>选至多 3 种不同颜色；要取 2 枚同色，请在前两项选同一种。</p><div class="party-form-row">${[1,2,3].map((n) => `<label>第 ${n} 枚<select name="color${n}">${options(Object.entries(gemNames).filter(([key]) => key !== "j").map(([key,name]) => [key,name+"色"]),"不取")}</select></label>`).join("")}</div><details><summary>持有超过 10 枚时选择归还</summary><div class="party-form-row">${Object.entries(gemNames).map(([key,name]) => `<label>${name}<input type="number" name="return_${key}" min="0" max="10" value="0"></label>`).join("")}</div></details><button class="primary-action">领取宝石</button></form></section>` : ""}`;
+      ${current && state.pending_noble?.length ? `<section class="party-panel party-controls"><h2>选择访问你的贵族</h2><div class="party-actions">${state.pending_noble.map((id) => `<button data-action="s-noble" data-noble="${id}">${img(nobles[id]?.image,"贵族卡")}选择这位贵族</button>`).join("")}</div></section>` : ""}
+      ${canAct ? `<section class="party-panel party-controls"><h2>领取宝石</h2><form data-action="s-take"><p>选至多 3 种不同颜色；要取 2 枚同色，请在前两项选同一种。</p><div class="party-form-row">${[1,2,3].map((n) => `<label>第 ${n} 枚<select name="color${n}">${options(Object.entries(gemNames).filter(([key]) => key !== "j").map(([key,name]) => [key,name+"色"]),"不取")}</select></label>`).join("")}</div><details><summary>持有超过 10 枚时选择归还</summary><div class="party-form-row">${Object.entries(gemNames).map(([key,name]) => `<label>${name}<input type="number" name="return_${key}" min="0" max="10" value="0"></label>`).join("")}</div></details><button class="primary-action">领取宝石</button></form></section>` : ""}`;
   }
 
   function avalonBoard() {
@@ -215,6 +217,7 @@ window.startPartyRoom = async function startPartyRoom({api, code, initial, notif
       "s-buy":{type:"buy",card:button.dataset.card,tier},
       "s-reserve":{type:"reserve",card:button.dataset.card,tier},
       "s-blind":{type:"reserve",card:"deck",tier},
+      "s-noble":{type:"claim_noble",noble:button.dataset.noble},
       "a-vote":{type:"team_vote",vote:button.dataset.vote},
       "a-quest":{type:"quest_vote",vote:button.dataset.vote},
       "c-resolve":{type:"resolve",apply:true},"c-cancel":{type:"resolve",apply:false},

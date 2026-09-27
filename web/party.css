@@ -49,6 +49,7 @@
 .party-collection .party-card { flex-basis: 53px; }
 .party-collection figcaption { display: none; }
 .party-actions { display: flex; flex-wrap: wrap; align-items: start; gap: 9px; }
+.party-actions button img { display: block; width: 78px; margin: 0 auto 6px; border-radius: 6px; }
 .party-actions form { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
 .party-actions form select { width: auto; min-width: 100px; }
 .party-controls { border-color: #d79b6b; background: #fff8ec; }

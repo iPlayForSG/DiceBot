@@ -56,6 +56,19 @@ def test_splendor_reserve_and_tokens() -> None:
         game_room.action(actor.qq_id, {"type": "take", "colors": ["r"], "returns": ["b"]})
 
 
+def test_splendor_noble_choice_blocks_other_actions() -> None:
+    game_room = room("splendor", 2)
+    actor = game_room.players[0]
+    choice = game_room.state["nobles"][0]
+    game_room.state["pending_noble"] = game_room.state["nobles"][:2]
+    with pytest.raises(GameError, match="先从可访问的贵族"):
+        game_room.action(actor.qq_id, {"type": "take", "colors": ["w", "u", "g"]})
+    game_room.action(actor.qq_id, {"type": "claim_noble", "noble": choice})
+    assert choice in game_room.state["claimed"][actor.qq_id]
+    assert choice not in game_room.state["nobles"]
+    assert game_room.state["current"] == 1
+
+
 def test_avalon_secret_votes_and_quest() -> None:
     game_room = room("avalon", 5, "advanced")
     ids = [player.qq_id for player in game_room.players]

@@ -283,17 +283,21 @@ class PartyRoom:
                       "built": {p.qq_id: [] for p in self.players},
                       "reserved": {p.qq_id: [] for p in self.players},
                       "claimed": {p.qq_id: [] for p in self.players},
-                      "current": 0, "turns": 0, "final_round": False}
+                      "current": 0, "turns": 0, "final_round": False, "pending_noble": []}
 
     def _splendor_bonus(self, qq_id: str) -> Counter:
         return Counter(SPLENDOR_CARDS[card]["bonus"] for card in self.state["built"][qq_id])
 
-    def _splendor_finish(self, player: Player) -> None:
+    def _splendor_finish(self, player: Player, check_nobles: bool = True) -> None:
         state = self.state
         bonus = self._splendor_bonus(player.qq_id)
         eligible = [n for n in NOBLES if n["id"] in state["nobles"] and
-                    all(bonus[color] >= count for color, count in n["cost"].items())]
+                    all(bonus[color] >= count for color, count in n["cost"].items())] if check_nobles else []
         if eligible:
+            if len(eligible) > 1:
+                state["pending_noble"] = [noble["id"] for noble in eligible]
+                self._record(f"{player.name} 满足多位贵族条件，须选择其中一位。")
+                return
             noble = eligible[0]
             state["nobles"].remove(noble["id"])
             state["claimed"][player.qq_id].append(noble["id"])
@@ -315,6 +319,16 @@ class PartyRoom:
         state = self.state
         qq = player.qq_id
         kind = action.get("type")
+        if state["pending_noble"]:
+            noble_id = action.get("noble")
+            if kind != "claim_noble" or noble_id not in state["pending_noble"]:
+                raise GameError("请先从可访问的贵族中选择一位。")
+            state["nobles"].remove(noble_id)
+            state["claimed"][qq].append(noble_id)
+            state["pending_noble"] = []
+            self._record(f"{player.name} 选择了一位贵族。")
+            self._splendor_finish(player, check_nobles=False)
+            return
         if kind == "take":
             colors = action.get("colors") or []
             if not isinstance(colors, list) or not colors or any(color not in COLORS for color in colors):
