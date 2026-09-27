@@ -186,23 +186,12 @@ window.startPartyRoom = async function startPartyRoom({api, code, initial, notif
   function render() {
     const me = view.me, state = view.state || {};
     root.innerHTML = `<div class="party-top"><div><a href="./">← 游戏库</a><span class="party-kicker">${escape(view.name)} · ${escape(view.mode === "basic" ? "基础" : view.mode === "advanced" ? "进阶" : view.mode.startsWith("ks-") ? "KS 角色包" : "扩展")}</span><h1>${escape(view.name)}</h1><p>房间 ${escape(code)} · ${escape(view.phase === "lobby" ? "等待开局" : view.phase === "finished" ? "游戏结束" : `轮到 ${view.players.find((p) => p.id === view.current)?.name || "玩家"}`)}</p></div><button type="button" data-action="copy-link">复制游玩链接</button></div>
-      <div class="party-columns"><aside class="party-sidebar"><h2>玩家 · ${view.players.length}</h2><div class="party-player-list">${view.players.map((p) => `<div class="party-player ${p.id === view.current ? "is-current" : ""}">${avatar(p)}<span><strong>${escape(p.name)}</strong><small>${p.alive ? p.claimed ? "已入座" : "等待入座" : "已出局"}</small></span></div>`).join("")}</div>${!me ? `<div class="party-panel party-claim"><h3>选择自己的 QQ 头像入座</h3><p>朋友之间自行认领身份；再次认领会转移座位。</p>${view.players.map((p) => `<button type="button" data-claim="${escape(p.id)}">${avatar(p)}${escape(p.name)}</button>`).join("")}</div>` : `<p class="party-self">你已入座：${escape(me.name)}</p>`}</aside>
-      <div class="party-main">${view.phase === "lobby" ? `<section class="party-panel"><h2>等待房主开局</h2><p>在 QQ 群发送「/桌游 加入」，所有人入局后由房主发送「/桌游 开始」。</p></section>` : game === "cubirds" ? cubirdsBoard() : game === "splendor" ? splendorBoard() : game === "avalon" ? avalonBoard() : coupBoard()}
+      <div class="party-columns"><aside class="party-sidebar"><h2>玩家 · ${view.players.length}</h2><div class="party-player-list">${view.players.map((p) => `<div class="party-player ${p.id === view.current ? "is-current" : ""}">${avatar(p)}<span><strong>${escape(p.name)}</strong><small>${p.alive ? p.claimed ? "已入座" : "等待入座" : "已出局"}</small></span></div>`).join("")}</div>${!me ? `<div class="party-panel party-claim"><h3>输入身份码认领座位</h3><p>Bot 会私聊发送身份码。请确认群设置已开启“允许群成员私聊”。</p><form data-action="claim"><label>你的身份码<input name="claim_code" autocomplete="one-time-code" maxlength="10" minlength="10" placeholder="输入 10 位身份码" required></label><button class="primary-action">认领我的座位</button></form></div>` : `<p class="party-self">你已入座：${escape(me.name)}</p>`}</aside>
+      <div class="party-main">${view.phase === "lobby" ? `<section class="party-panel"><h2>等待房主开局</h2><p>在 QQ 群发送「/桌游 加入 ${escape(code)}」，Bot 会私聊身份码。所有人加入后由房主发送「/桌游 开始」；创建后 5 分钟未开始会自动取消。</p></section>` : game === "cubirds" ? cubirdsBoard() : game === "splendor" ? splendorBoard() : game === "avalon" ? avalonBoard() : coupBoard()}
       <section class="party-panel party-log"><h2>最近动态</h2><ol>${(view.log || []).slice().reverse().map((entry) => `<li>${escape(entry)}</li>`).join("")}</ol></section></div></div>`;
   }
 
   root.addEventListener("click", async (event) => {
-    const claim = event.target.closest("[data-claim]");
-    if (claim) {
-      try {
-        const result = await request(`/api/rooms/${code}/claim`,"POST",{qq_id:claim.dataset.claim});
-        token = result.token;
-        localStorage.setItem(`dicebot:${code}`,token);
-        view = await request(`/api/rooms/${code}/me`);
-        connect();render();
-      } catch (error) { notify(error.message); }
-      return;
-    }
     const button = event.target.closest("[data-action]");
     if (!button || button.closest("form")) return;
     const act = button.dataset.action;
@@ -233,6 +222,18 @@ window.startPartyRoom = async function startPartyRoom({api, code, initial, notif
     if (!form) return;
     event.preventDefault();
     const data = new FormData(form), act = form.dataset.action;
+    if (act === "claim") {
+      try {
+        const result = await request(`/api/rooms/${code}/claim`, "POST", {claim_code:String(data.get("claim_code") || "").trim().toUpperCase()});
+        token = result.token;
+        localStorage.setItem(`dicebot:${code}`, token);
+        view = await request(`/api/rooms/${code}/me`);
+        connect();
+        render();
+        notify("已进入你的座位。");
+      } catch (error) { notify(error.message); }
+      return;
+    }
     let action;
     if (act === "bird-place") action = {type:"place",species:data.get("species"),row:Number(data.get("row")),side:data.get("side")};
     if (act === "bird-flock") action = {type:"flock",species:data.get("species")};

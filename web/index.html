@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f4ecdc">
   <title>桌游夜航 · 和朋友开一桌</title>
-  <meta name="description" content="在 QQ 群组局，打开链接选择自己的头像，和朋友在线玩桌游。">
+  <meta name="description" content="在 QQ 群组局，打开链接输入 Bot 私聊的身份码，和朋友在线玩桌游。">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./style.css?build=local">
   <link rel="stylesheet" href="./home.css?build=local">
@@ -25,9 +25,9 @@
     <div class="landing-copy">
       <span class="eyebrow">桌游夜航 / 在线桌游大厅</span>
       <h1>朋友到齐，<br><em>就开一桌。</em></h1>
-      <p>在 QQ 群邀请朋友、创建房间，再到网页选择自己的 QQ 头像。无论今晚玩哪款桌游，房间入口都在这里。</p>
+      <p>在 QQ 群邀请朋友、创建房间。Bot 会私聊每位玩家的身份码；来到网页输入身份码后，就能进入自己的座位。</p>
       <form id="room-form" class="room-form"><label for="room-input">已有房间号？直接加入</label><div><input id="room-input" autocomplete="off" maxlength="8" placeholder="输入 8 位房间号" required><button type="submit">进入房间 →</button></div></form>
-      <p class="small-note">还没组局？从下方游戏库选择一款，在 QQ 群发送对应命令。</p>
+      <p class="small-note">还没组局？从下方游戏库选择一款，在 QQ 群发送对应命令。请确认群设置已开启“允许群成员私聊”。</p>
     </div>
     <div class="landing-art" aria-hidden="true">
       <div class="art-orbit orbit-one"></div><div class="art-orbit orbit-two"></div>
@@ -77,7 +77,7 @@
 
     <aside class="right-rail">
       <div class="turn-banner"><span>当前回合</span><strong id="turn-name">等待玩家</strong><small id="turn-detail">在 QQ 群邀请朋友加入</small></div>
-      <div id="claim-panel" class="claim-panel" hidden><h2>选好你的座位</h2><p>点击自己的 QQ 头像进入。再次选择同一身份会把座位转移到当前浏览器。</p><div id="claim-list"></div></div>
+      <div id="claim-panel" class="claim-panel" hidden><h2>输入身份码认领座位</h2><p>身份码由 Bot 私聊发送，请确认群设置已开启“允许群成员私聊”。</p><form id="claim-form"><label for="claim-code">你的身份码</label><input id="claim-code" autocomplete="one-time-code" maxlength="10" minlength="10" placeholder="输入 10 位身份码" required><button class="primary-action" type="submit">认领我的座位</button></form></div>
       <div id="action-panel" class="action-panel" hidden>
         <h2>本回合操作</h2>
         <label for="target">指定玩家</label><select id="target"><option value="">选择玩家</option></select>

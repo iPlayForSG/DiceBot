@@ -81,3 +81,7 @@ async def start(code: str) -> dict:
 
 async def stop(code: str) -> dict:
     return await _request("DELETE", f"/api/bot/rooms/{code}")
+
+
+async def cancel(code: str) -> dict:
+    return await _request("POST", f"/api/bot/rooms/{code}/cancel")

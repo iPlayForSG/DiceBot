@@ -15,6 +15,7 @@ def room(game: str, count: int, mode: str = "basic") -> PartyRoom:
 @pytest.mark.parametrize("game,count", [("cubirds", 2), ("coup", 2), ("splendor", 2), ("avalon", 5)])
 def test_setup_keeps_private_information_private(game: str, count: int) -> None:
     game_room = room(game, count)
+    game_room.players[0].claim_code = "ABCDEFGHJK"
     public = game_room.view()
     personal = game_room.view("10000")
     assert public["game"] == game
@@ -22,6 +23,7 @@ def test_setup_keeps_private_information_private(game: str, count: int) -> None:
     assert "deck" not in public["state"]
     assert personal["me"]["id"] == "10000"
     assert "hand" not in public["players"][0]
+    assert "ABCDEFGHJK" not in str(public)
     if game == "avalon":
         assert "roles" not in public["state"]
         assert personal["me"]["role"]

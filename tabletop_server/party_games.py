@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import random
 import re
+import time
 
 from tabletop_server.engine import GameError, Player
 
@@ -89,6 +90,7 @@ class PartyRoom:
     state: dict = field(default_factory=dict)
     log: list[str] = field(default_factory=list)
     revision: int = 0
+    created_at: float = field(default_factory=time.time)
 
     def player(self, qq_id: str) -> Player:
         for player in self.players:
@@ -746,6 +748,7 @@ class PartyRoom:
         view = {
             "code": self.code, "game": self.game, "name": NAMES[self.game], "mode": self.mode,
             "phase": self.phase, "revision": self.revision, "state": public,
+            "expiresAt": int(self.created_at + 300) if self.phase == "lobby" else None,
             "players": [{"id": p.qq_id, "name": p.name, "alive": p.alive, "cards": len(p.hand),
                          "avatar": p.avatar, "claimed": bool(p.token)} for p in self.players],
             "current": self.players[state["current"]].qq_id if state and self.phase != "lobby" else None,

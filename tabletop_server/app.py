@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import base64
+from contextlib import asynccontextmanager, suppress
 from dataclasses import asdict
 import json
 import os
 from pathlib import Path
 import secrets
+import time
 from typing import Any, Literal
 
 from dotenv import load_dotenv
@@ -32,7 +34,18 @@ ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get(
     "TABLETOP_ALLOWED_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000"
 ).split(",") if origin.strip()]
 
-app = FastAPI(title="DiceBot tabletop service")
+@asynccontextmanager
+async def _lifespan(_: FastAPI):
+    task = asyncio.create_task(_cleanup_loop())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+
+
+app = FastAPI(title="DiceBot tabletop service", lifespan=_lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -43,6 +56,9 @@ app.add_middleware(
 rooms: dict[str, GameRoom | PartyRoom] = {}
 connections: dict[str, dict[WebSocket, str]] = {}
 lock = asyncio.Lock()
+LOBBY_TTL_SECONDS = 5 * 60
+CLEANUP_INTERVAL_SECONDS = 5
+CLAIM_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
 
 def _restore() -> None:
@@ -65,9 +81,39 @@ _restore()
 
 def _room(code: str) -> GameRoom | PartyRoom:
     room = rooms.get(code.upper())
-    if room is None:
-        raise HTTPException(404, "房间不存在或已经结束。")
+    if room is None or (room.phase == "lobby" and room.created_at + LOBBY_TTL_SECONDS <= time.time()):
+        raise HTTPException(404, "房间不存在或已取消，请在群里重新创建。")
     return room
+
+
+def _new_claim_code(room: GameRoom | PartyRoom) -> str:
+    existing = {player.claim_code for player in room.players}
+    while True:
+        code = "".join(secrets.choice(CLAIM_ALPHABET) for _ in range(10))
+        if code not in existing:
+            return code
+
+
+async def _expire_lobbies_locked() -> None:
+    now = time.time()
+    expired = [room for room in rooms.values() if room.phase == "lobby" and room.created_at + LOBBY_TTL_SECONDS <= now]
+    if not expired:
+        return
+    for room in expired:
+        del rooms[room.code]
+        for websocket in list(connections.pop(room.code, {})):
+            try:
+                await websocket.close(code=1001)
+            except Exception:
+                pass
+    _save()
+
+
+async def _cleanup_loop() -> None:
+    while True:
+        await asyncio.sleep(CLEANUP_INTERVAL_SECONDS)
+        async with lock:
+            await _expire_lobbies_locked()
 
 
 def _admin(value: str | None) -> None:
@@ -82,7 +128,7 @@ def _member(room: GameRoom | PartyRoom, authorization: str | None) -> Player:
     for player in room.players:
         if player.token and secrets.compare_digest(player.token, token):
             return player
-    raise HTTPException(401, "请重新选择你的 QQ 身份。")
+    raise HTTPException(401, "座位已转移，请重新输入 Bot 私聊的身份码。")
 
 
 def _avatar(qq_id: str, content: str | None) -> bool:
@@ -127,7 +173,7 @@ class CreateRoom(BaseModel):
 
 
 class Claim(BaseModel):
-    qq_id: str
+    claim_code: str = Field(min_length=10, max_length=10)
 
 
 class Action(BaseModel):
@@ -158,6 +204,7 @@ async def create_room(payload: CreateRoom, x_tabletop_admin: str | None = Header
     if payload.mode not in allowed[payload.game]:
         raise HTTPException(400, "所选游戏模式无效。")
     async with lock:
+        await _expire_lobbies_locked()
         if any(room.group_id == payload.group_id for room in rooms.values()):
             raise HTTPException(409, "本群已有网页桌游房间。")
         alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -169,31 +216,44 @@ async def create_room(payload: CreateRoom, x_tabletop_admin: str | None = Header
         room = (GameRoom(code, payload.group_id, [player], mode=payload.mode)
                 if payload.game == "exploding-kittens" else
                 PartyRoom(code, payload.group_id, [player], payload.game, mode=payload.mode))
+        player.claim_code = _new_claim_code(room)
         room._record(f"{player.name} 创建了{NAMES.get(payload.game, '炸弹猫')}房间。")
         rooms[code] = room
         _save()
-    return {"code": code}
+    return {"code": code, "claim_code": player.claim_code}
 
 
 @app.post("/api/bot/rooms/{code}/players")
 async def add_player(code: str, payload: BotPlayer, x_tabletop_admin: str | None = Header(default=None)) -> dict[str, str]:
     _admin(x_tabletop_admin)
     async with lock:
+        await _expire_lobbies_locked()
         room = _room(code)
-        try:
-            room.add_player(payload.qq_id, payload.name)
-        except GameError as exc:
-            raise HTTPException(400, str(exc)) from exc
-        room.player(payload.qq_id).avatar = _avatar(payload.qq_id, payload.avatar_base64)
+        existing = next((player for player in room.players if player.qq_id == payload.qq_id), None)
+        added = existing is None
+        if added:
+            if room.phase != "lobby":
+                raise HTTPException(400, "游戏已经开始，无法加入。")
+            try:
+                room.add_player(payload.qq_id, payload.name)
+            except GameError as exc:
+                raise HTTPException(400, str(exc)) from exc
+        player = room.player(payload.qq_id)
+        if added:
+            player.avatar = _avatar(payload.qq_id, payload.avatar_base64)
+        if not player.claim_code:
+            player.claim_code = _new_claim_code(room)
         _save()
-        await _broadcast(room)
-    return {"status": "joined"}
+        if added:
+            await _broadcast(room)
+    return {"status": "joined" if added else "already_joined", "claim_code": player.claim_code}
 
 
 @app.get("/api/bot/groups/{group_id}")
 async def group_room(group_id: str, x_tabletop_admin: str | None = Header(default=None)) -> dict[str, Any]:
     _admin(x_tabletop_admin)
-    room = next((room for room in rooms.values() if room.group_id == group_id), None)
+    room = next((room for room in rooms.values() if room.group_id == group_id and
+                 not (room.phase == "lobby" and room.created_at + LOBBY_TTL_SECONDS <= time.time())), None)
     if room is None:
         raise HTTPException(404, "本群还没有网页桌游房间。")
     return room.view()
@@ -244,6 +304,23 @@ async def close_room(code: str, x_tabletop_admin: str | None = Header(default=No
     return {"status": "closed"}
 
 
+@app.post("/api/bot/rooms/{code}/cancel")
+async def cancel_room(code: str, x_tabletop_admin: str | None = Header(default=None)) -> dict[str, str]:
+    _admin(x_tabletop_admin)
+    async with lock:
+        room = _room(code)
+        if room.phase != "lobby":
+            raise HTTPException(400, "游戏已开始，请使用 /桌游 结束。")
+        del rooms[room.code]
+        _save()
+        for websocket in list(connections.pop(room.code, {})):
+            try:
+                await websocket.close(code=1001)
+            except Exception:
+                pass
+    return {"status": "cancelled"}
+
+
 @app.get("/api/rooms/{code}")
 async def get_room(code: str) -> dict[str, Any]:
     return _room(code).view()
@@ -253,12 +330,12 @@ async def get_room(code: str) -> dict[str, Any]:
 async def claim_room(code: str, payload: Claim) -> dict[str, str]:
     async with lock:
         room = _room(code)
-        try:
-            player = room.player(payload.qq_id)
-        except GameError as exc:
-            raise HTTPException(400, str(exc)) from exc
-        # Friends explicitly choose their own QQ identity; selecting it again
-        # transfers that seat to the new browser and revokes the previous token.
+        claim_code = payload.claim_code.strip().upper()
+        player = next((player for player in room.players if player.claim_code and
+                       secrets.compare_digest(player.claim_code, claim_code)), None)
+        if player is None:
+            raise HTTPException(400, "身份码无效，请查看 Bot 私聊消息。")
+        # A reused identity code transfers the seat and revokes the old browser.
         player.token = secrets.token_urlsafe(32)
         _save()
         await _broadcast(room)
@@ -316,7 +393,7 @@ async def get_avatar(qq_id: str) -> FileResponse:
 @app.websocket("/ws/{code}")
 async def room_socket(websocket: WebSocket, code: str) -> None:
     room = rooms.get(code.upper())
-    if not room:
+    if not room or (room.phase == "lobby" and room.created_at + LOBBY_TTL_SECONDS <= time.time()):
         await websocket.close(code=1008)
         return
     await websocket.accept()

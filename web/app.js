@@ -64,21 +64,6 @@ function renderPlayers() {
 
 function renderClaim() {
   $("claim-panel").hidden = Boolean(state.me);
-  $("claim-list").innerHTML = state.players.map((player) => `
-    <button class="claim-option" data-id="${escapeHtml(player.id)}" type="button">${avatar(player,"small")}
-      <span>${escapeHtml(player.name)}<br><small>QQ ${escapeHtml(player.id)}${player.claimed ? " · 可转移到这里" : ""}</small></span>
-    </button>`).join("");
-  $("claim-list").querySelectorAll("button").forEach((button) => button.addEventListener("click", async () => {
-    try {
-      const result = await request(`/api/rooms/${code}/claim`, {method:"POST",body:JSON.stringify({qq_id:button.dataset.id})});
-      token = result.token;
-      localStorage.setItem(`dicebot:${code}`, token);
-      connect();
-      const mine = await request(`/api/rooms/${code}/me`);
-      render(mine);
-      notify("已进入你的座位。");
-    } catch (error) { notify(error.message); }
-  }));
 }
 
 function renderHand() {
@@ -184,7 +169,7 @@ function render(next) {
     : `<div id="discard-card" class="discard-empty">弃牌<br>堆</div>`;
   const active = state.players.find((player) => player.id === state.current);
   $("turn-name").textContent = state.phase === "lobby" ? "等待玩家" : state.phase === "finished" ? "胜负已定" : active?.name || "—";
-  $("turn-detail").textContent = state.phase === "lobby" ? "在 QQ 群邀请朋友加入" : state.phase === "finished" ? "这一局已经结束" : `需要完成 ${state.drawsDue} 次回合`;
+  $("turn-detail").textContent = state.phase === "lobby" ? `在 QQ 群发送 /桌游 加入 ${code}；5 分钟内未开局会自动取消` : state.phase === "finished" ? "这一局已经结束" : `需要完成 ${state.drawsDue} 次回合`;
   $("log").innerHTML = [...state.log].reverse().map((line) => `<div class="log-item">${escapeHtml(line)}</div>`).join("");
   renderPlayers(); renderClaim(); renderHand(); renderActions();
   if (state.me?.peek?.length) {
@@ -232,6 +217,18 @@ $("room-form").addEventListener("submit", (event) => {
   event.preventDefault();
   const room = $("room-input").value.trim().toUpperCase();
   if (room) location.href = `?room=${encodeURIComponent(room)}`;
+});
+$("claim-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  try {
+    const claimCode = $("claim-code").value.trim().toUpperCase();
+    const result = await request(`/api/rooms/${code}/claim`, {method:"POST",body:JSON.stringify({claim_code:claimCode})});
+    token = result.token;
+    localStorage.setItem(`dicebot:${code}`, token);
+    connect();
+    render(await request(`/api/rooms/${code}/me`));
+    notify("已进入你的座位。");
+  } catch (error) { notify(error.message); }
 });
 document.querySelectorAll("[data-copy-command]").forEach((button) => button.addEventListener("click", async () => {
   try {
