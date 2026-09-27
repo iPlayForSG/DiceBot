@@ -62,7 +62,7 @@ uv run python scripts/import_tts.py "D:\Steam\steamapps\common\Tabletop Simulato
 
 1. 创建 `iPlayForSG/DiceBot` 仓库并推送 `main`。Pages 的 Source 选 **GitHub Actions**；工作流在 `.github/workflows/pages.yml`。
 2. 另行部署实时服务，使用**单个进程**运行 `uvicorn tabletop_server.app:app`，为 `TABLETOP_DATA_DIR` 配置持久磁盘，并提供 HTTPS/WSS。多进程部署前需要把房间与连接状态迁移到共享存储。
-3. 在仓库 Actions variables 中设置 `TABLETOP_API_URL` 为实时服务的公网 HTTPS 根地址，例如 `https://tabletop-api.example.com`。工作流会在发布时写入 `web/config.js`。
+3. 将 `deployment/api-url.txt` 设为实时服务的公网 HTTPS 根地址，例如 `https://tabletop-api.example.com`；工作流发布时将其写入 `web/config.js`。没有该文件时才读取仓库变量 `TABLETOP_API_URL`。
 4. 实时服务环境变量设 `TABLETOP_ALLOWED_ORIGINS=https://iplayforsg.github.io`、`TABLETOP_ADMIN_TOKEN=<同 Bot>`；Bot 的 `TABLETOP_API_URL` 指向同一服务，`TABLETOP_PUBLIC_URL=https://iplayforsg.github.io/DiceBot`。
 
 如果只发布 GitHub Pages，静态页面会出现，但不能建房和实时游玩。发布依赖 GitHub 仓库权限和一个公网后端部署位置。
@@ -75,9 +75,9 @@ uv run python scripts/import_tts.py "D:\Steam\steamapps\common\Tabletop Simulato
 cloudflared tunnel --url http://127.0.0.1:8765 --no-autoupdate
 ```
 
-它会输出一个随机的 `https://...trycloudflare.com` 地址。把这个地址设为仓库变量 `TABLETOP_API_URL`，重新运行 Pages 工作流；`.env` 的 `TABLETOP_ALLOWED_ORIGINS` 要包含 `https://iplayforsg.github.io`。本机实时服务和隧道进程需要一直运行。Cloudflare [将 Quick Tunnel 定位为测试用途](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/do-more-with-tunnels/trycloudflare/)；进程重启后地址可能变化，届时需要更新仓库变量并重新发布。
+它会输出一个随机的 `https://...trycloudflare.com` 地址。把这个地址写入 `deployment/api-url.txt` 并推送，Pages 会自动发布；`.env` 的 `TABLETOP_ALLOWED_ORIGINS` 要包含 `https://iplayforsg.github.io`。本机实时服务和隧道进程需要一直运行。Cloudflare [将 Quick Tunnel 定位为测试用途](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/do-more-with-tunnels/trycloudflare/)；进程重启后地址可能变化，届时需要重新发布。
 
-在这台已保存 GitHub 凭据的电脑上，可用 `uv run python scripts/run_quick_demo.py` 一次启动 Bot、实时服务和临时隧道，并自动更新仓库变量、重跑 Pages 工作流。NapCat 仍需单独启动并登录。关闭该终端会停止这三个进程；电脑休眠或断网时，网页也无法继续联机。
+在这台已保存 GitHub 凭据的电脑上，可用 `uv run python scripts/run_quick_demo.py` 一次启动 Bot、实时服务和临时隧道，并自动更新 Pages 地址文件。NapCat 仍需单独启动并登录。关闭该终端会停止这三个进程；电脑休眠或断网时，网页也无法继续联机。
 
 固定地址应使用 Cloudflare 账号中托管的域名创建**命名隧道**，把其 Public Hostname 的 HTTP 源指向 `127.0.0.1:8765`。云端仍以 HTTPS/WSS 对外。具体创建流程见 [Cloudflare 文档](https://developers.cloudflare.com/tunnel/features/locally-managed-tunnels/create-local-tunnel/)。
 

@@ -1,13 +1,14 @@
 """Run the QQ bot, game API and a temporary Cloudflare tunnel together.
 
-The tunnel URL changes on every restart. This script updates the GitHub Actions
-variable and dispatches the Pages workflow when a saved GitHub credential exists.
+The tunnel URL changes on every restart. This script updates the Pages source
+using a repository-scoped deploy key or a saved local GitHub credential.
 Keep this terminal open while people play. Ctrl+C stops all child processes.
 """
 
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 from pathlib import Path
@@ -72,22 +73,26 @@ def publish_tunnel_url(url: str, settings: dict | None = None) -> None:
         publish(url, checkout, Path(settings["DICEBOT_GITHUB_DEPLOY_KEY"]))
         return
     token = git_credential()
-    variable = "/actions/variables/TABLETOP_API_URL"
-    status, _ = github_request(token, "GET", variable)
+    path = "/contents/deployment/api-url.txt"
+    status, current = github_request(token, "GET", path)
+    if status not in (200, 404):
+        raise RuntimeError(f"读取 GitHub Pages 地址文件失败：HTTP {status}")
     if status == 200:
-        status, _ = github_request(token, "PATCH", variable, {"name": "TABLETOP_API_URL", "value": url})
-        expected = 204
-    elif status == 404:
-        status, _ = github_request(token, "POST", "/actions/variables", {"name": "TABLETOP_API_URL", "value": url})
-        expected = 201
-    else:
-        raise RuntimeError(f"读取 GitHub 仓库变量失败：HTTP {status}")
-    if status != expected:
-        raise RuntimeError(f"更新 GitHub 仓库变量失败：HTTP {status}")
-    status, _ = github_request(token, "POST", "/actions/workflows/pages.yml/dispatches", {"ref": "main"})
-    if status != 204:
-        raise RuntimeError(f"触发 Pages 发布失败：HTTP {status}")
-    print("已更新 GitHub Pages 的实时服务地址，并触发发布。", flush=True)
+        previous = base64.b64decode(current["content"]).decode("utf-8").strip()
+        if previous == url:
+            print("GitHub Pages already uses this tunnel URL.", flush=True)
+            return
+    body = {
+        "message": "chore: update tabletop tunnel URL",
+        "content": base64.b64encode((url + "\n").encode("utf-8")).decode("ascii"),
+        "branch": "main",
+    }
+    if status == 200:
+        body["sha"] = current["sha"]
+    result, _ = github_request(token, "PUT", path, body)
+    if result not in (200, 201):
+        raise RuntimeError(f"更新 GitHub Pages 地址文件失败：HTTP {result}")
+    print("已更新 GitHub Pages 地址文件并触发发布。", flush=True)
 
 
 def port_in_use(port: int) -> bool:
