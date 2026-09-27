@@ -81,6 +81,18 @@ cloudflared tunnel --url http://127.0.0.1:8765 --no-autoupdate
 
 固定地址应使用 Cloudflare 账号中托管的域名创建**命名隧道**，把其 Public Hostname 的 HTTP 源指向 `127.0.0.1:8765`。云端仍以 HTTPS/WSS 对外。具体创建流程见 [Cloudflare 文档](https://developers.cloudflare.com/tunnel/features/locally-managed-tunnels/create-local-tunnel/)。
 
+### Windows 常驻主机
+
+目标机使用 `C:\Users\<用户>\DiceBot` 放项目和私有 `.env`，`C:\Users\<用户>\NapCatRuntime` 放独立 QQ/NapCat。部署工具 `scripts/bootstrap_remote.py` 和 `scripts/bootstrap_napcat.py` 会生成本机密钥与反向 WebSocket 配置；密码和令牌不会进入仓库。NapCat 的便携启动器为 `scripts/launch_napcat_portable.py`。
+
+目前无 Cloudflare 托管域名时，`scripts/run_quick_demo.py` 会在隧道重启后更新 `deployment/api-url.txt` 并推送到 GitHub，让 Pages 自动重发。远端使用**仅能写入本仓库的 GitHub 部署密钥**，不复制个人 GitHub 登录。首次配置完成后，可由管理员运行：
+
+```powershell
+./scripts/install_windows_tasks.ps1 -QQ <机器人QQ号>
+```
+
+这会登记两个仅在该 Windows 用户登录时启动的任务：游戏 API/Bot/临时隧道，以及 NapCat。电脑须保持登录、联网且不休眠；登录任务不能替代真正的常在线服务器。拥有 Cloudflare 域名后，再改成固定主机名的命名隧道。
+
 ## 验证
 
 ```powershell
