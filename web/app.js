@@ -233,6 +233,12 @@ $("room-form").addEventListener("submit", (event) => {
   const room = $("room-input").value.trim().toUpperCase();
   if (room) location.href = `?room=${encodeURIComponent(room)}`;
 });
+$("copy-command").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText("/桌游 创建 炸弹猫");
+    notify("组局命令已复制，粘贴到 QQ 群发送即可。");
+  } catch { notify("复制失败，请手动复制命令。"); }
+});
 $("copy-link").addEventListener("click", async () => {try {await navigator.clipboard.writeText(location.href); notify("链接已复制。");} catch {notify("复制失败，请从地址栏复制链接。");}});
 $("zoom-card").addEventListener("click", () => showCard(selected[0]));
 $("retrieve").addEventListener("change", () => {
