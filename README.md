@@ -31,6 +31,8 @@ uv run python bot.py
 
 浏览器可打开 `http://127.0.0.1:8077/`。QQ 的 OneBot V11 实现端需开启**反向 WebSocket**，连接到 `ws://127.0.0.1:8080/onebot/v11/`；如启用 access token，两端填写相同值。配置细节见 [OneBot 适配器文档](https://onebot.adapters.nonebot.dev/docs/guide/setup/)。本仓库不包含 QQ 登录协议实现端。
 
+本机使用 [NapCat Shell](https://doc.napneko.icu/guide/boot/Shell) 作为 OneBot 实现端，另行保存在被 Git 忽略的 `.local-tools/napcat/shell/`。启动 `launcher-user.bat -q <机器人QQ号>`，登录后在 `config/onebot11_<机器人QQ号>.json` 中启用 WebSocket 客户端，连接到 `ws://127.0.0.1:8080/onebot/v11/ws`。`token` 应与 `.env` 的 `ONEBOT_ACCESS_TOKEN` 相同。NapCat WebUI 只监听 `127.0.0.1:6099`，不通过 Cloudflare Tunnel 对外开放。
+
 ## QQ 群操作
 
 ```text
@@ -74,6 +76,8 @@ cloudflared tunnel --url http://127.0.0.1:8765 --no-autoupdate
 ```
 
 它会输出一个随机的 `https://...trycloudflare.com` 地址。把这个地址设为仓库变量 `TABLETOP_API_URL`，重新运行 Pages 工作流；`.env` 的 `TABLETOP_ALLOWED_ORIGINS` 要包含 `https://iplayforsg.github.io`。本机实时服务和隧道进程需要一直运行。Cloudflare [将 Quick Tunnel 定位为测试用途](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/do-more-with-tunnels/trycloudflare/)；进程重启后地址可能变化，届时需要更新仓库变量并重新发布。
+
+在这台已保存 GitHub 凭据的电脑上，可用 `uv run python scripts/run_quick_demo.py` 一次启动 Bot、实时服务和临时隧道，并自动更新仓库变量、重跑 Pages 工作流。NapCat 仍需单独启动并登录。关闭该终端会停止这三个进程；电脑休眠或断网时，网页也无法继续联机。
 
 固定地址应使用 Cloudflare 账号中托管的域名创建**命名隧道**，把其 Public Hostname 的 HTTP 源指向 `127.0.0.1:8765`。云端仍以 HTTPS/WSS 对外。具体创建流程见 [Cloudflare 文档](https://developers.cloudflare.com/tunnel/features/locally-managed-tunnels/create-local-tunnel/)。
 
