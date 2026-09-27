@@ -64,7 +64,13 @@ def github_request(token: str, method: str, path: str, body: dict | None = None)
         return exc.code, {}
 
 
-def publish_tunnel_url(url: str) -> None:
+def publish_tunnel_url(url: str, settings: dict | None = None) -> None:
+    if settings and settings.get("DICEBOT_GITHUB_DEPLOY_KEY"):
+        from publish_quick_tunnel_git import publish
+
+        checkout = Path(settings.get("DICEBOT_GITHUB_PUBLISHER", ROOT.parent / "DiceBotPublisher"))
+        publish(url, checkout, Path(settings["DICEBOT_GITHUB_DEPLOY_KEY"]))
+        return
     token = git_credential()
     variable = "/actions/variables/TABLETOP_API_URL"
     status, _ = github_request(token, "GET", variable)
@@ -131,7 +137,7 @@ def main() -> None:
             )
             children.append(bot)
             tunnel = subprocess.Popen(
-                ["cloudflared", "tunnel", "--url", "http://127.0.0.1:8765", "--no-autoupdate"],
+                [settings.get("TABLETOP_CLOUDFLARED_PATH") or "cloudflared", "tunnel", "--url", "http://127.0.0.1:8765", "--no-autoupdate"],
                 cwd=ROOT, env=environment, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 text=True, encoding="utf-8", errors="replace", creationflags=PROCESS_FLAGS,
             )
@@ -145,7 +151,7 @@ def main() -> None:
                     url = found.group(0)
                     print(f"临时实时服务：{url}", flush=True)
                     if not args.no_publish:
-                        publish_tunnel_url(url)
+                        publish_tunnel_url(url, settings)
                     published = True
                 if bot.poll() is not None:
                     raise RuntimeError("QQ Bot 已退出，请查看 data/quick-bot.log。")

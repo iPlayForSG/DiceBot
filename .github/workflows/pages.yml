@@ -22,8 +22,11 @@ jobs:
         env:
           API_URL: ${{ vars.TABLETOP_API_URL }}
         run: |
+          if [ -s deployment/api-url.txt ]; then
+            API_URL="$(tr -d '\r\n' < deployment/api-url.txt)"
+          fi
           if [ -z "$API_URL" ]; then
-            echo "Set the TABLETOP_API_URL repository variable to the public HTTPS backend URL." >&2
+            echo "Set deployment/api-url.txt or the TABLETOP_API_URL repository variable." >&2
             exit 1
           fi
           printf 'window.TABLETOP_API_URL = %s;\n' "$(python -c 'import json,os; print(json.dumps(os.environ["API_URL"]))')" > web/config.js
