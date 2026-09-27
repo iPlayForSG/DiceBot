@@ -35,7 +35,7 @@ def main() -> None:
     }
     raise SystemExit(subprocess.call(
         [str(root / "NapCatWinBootMain.exe"), str(root / "QQ.exe"),
-         str(root / "NapCatWinBootHook.dll"), "-q", args.qq],
+         str(root / "NapCatWinBootHook.dll"), args.qq],
         cwd=root, env=environment,
     ))
 

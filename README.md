@@ -31,7 +31,7 @@ uv run python bot.py
 
 浏览器可打开 `http://127.0.0.1:8077/`。QQ 的 OneBot V11 实现端需开启**反向 WebSocket**，连接到 `ws://127.0.0.1:8080/onebot/v11/`；如启用 access token，两端填写相同值。配置细节见 [OneBot 适配器文档](https://onebot.adapters.nonebot.dev/docs/guide/setup/)。本仓库不包含 QQ 登录协议实现端。
 
-本机使用 [NapCat Shell](https://doc.napneko.icu/guide/boot/Shell) 作为 OneBot 实现端，另行保存在被 Git 忽略的 `.local-tools/napcat/shell/`。启动 `launcher-user.bat -q <机器人QQ号>`，登录后在 `config/onebot11_<机器人QQ号>.json` 中启用 WebSocket 客户端，连接到 `ws://127.0.0.1:8080/onebot/v11/ws`。`token` 应与 `.env` 的 `ONEBOT_ACCESS_TOKEN` 相同。NapCat WebUI 只监听 `127.0.0.1:6099`，不通过 Cloudflare Tunnel 对外开放。
+本机使用 [NapCat Shell](https://doc.napneko.icu/guide/boot/Shell) 作为 OneBot 实现端，另行保存在被 Git 忽略的 `.local-tools/napcat/shell/`。启动 `launcher-user.bat <机器人QQ号>`，登录后在 `config/onebot11_<机器人QQ号>.json` 中启用 WebSocket 客户端，连接到 `ws://127.0.0.1:8080/onebot/v11/ws`。`token` 应与 `.env` 的 `ONEBOT_ACCESS_TOKEN` 相同。NapCat WebUI 只监听 `127.0.0.1:6099`，不通过 Cloudflare Tunnel 对外开放。
 
 ## QQ 群操作
 
