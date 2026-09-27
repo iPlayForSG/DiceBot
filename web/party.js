@@ -132,17 +132,58 @@ window.startPartyRoom = async function startPartyRoom({api, code, initial, notif
   }
 
   function coupBoard() {
-    const state = view.state, me = view.me, current = view.current === me?.id, pending = state.pending;
-    const targetOptions = view.players.filter((p) => p.alive && (p.id !== me?.id || view.mode !== "basic")).map((p) => [p.id,p.id === me?.id ? `${p.name}（自己，仅用于转换阵营）` : p.name]);
+    const state = view.state, me = view.me, pending = state.pending;
+    const current = view.current === me?.id;
+    const isKs = view.mode.startsWith("ks-");
+    const isReformation = view.mode === "reformation";
+    const targetOptions = view.players.filter((p) => p.alive && (p.id !== me?.id || isReformation))
+      .map((p) => [p.id, p.id === me?.id ? `${p.name}（自己，仅用于转换阵营）` : p.name]);
+    const stats = `<section class="party-panel"><h2>权力与硬币</h2><div class="party-stats">${view.players.map((p) => `<div><strong>${escape(p.name)} ${p.alive ? "" : "· 已出局"}</strong><span>${state.coins?.[p.id] ?? 0} 枚硬币 · ${p.cards} 张影响牌${state.factions?.[p.id] ? ` · ${escape(state.factions[p.id])}` : ""}</span><small>已公开：${(state.lost?.[p.id] || []).join("、") || "无"}</small></div>`).join("")}</div>${isReformation ? `<p>国库：${state.treasury} 枚。不能对其他同阵营玩家发动针对行动。</p>` : ""}</section>`;
     const ownHand = me ? `<section class="party-panel"><h2>我的影响牌</h2><div class="party-card-strip">${me.hand.map((role) => imageCard(role)).join("")}</div><p>身份只在你的浏览器显示。失去全部影响牌即出局。</p></section>` : "";
-    return `<section class="party-panel"><h2>权力与硬币</h2><div class="party-stats">${view.players.map((p) => `<div><strong>${escape(p.name)} ${p.alive ? "" : "· 已出局"}</strong><span>${state.coins?.[p.id] ?? 0} 枚硬币 · ${p.cards} 张影响牌${state.factions?.[p.id] ? ` · ${escape(state.factions[p.id])}` : ""}</span><small>已公开：${(state.lost?.[p.id] || []).join("、") || "无"}</small></div>`).join("")}</div>${state.factions && Object.keys(state.factions).length ? `<p>国库：${state.treasury} 枚。扩展模式限制对同阵营发动针对行动。</p>` : ""}</section>
-      ${ownHand}
-      ${pending ? `<section class="party-panel party-controls"><h2>待结算行动</h2><p>${escape(view.players.find((p) => p.id === pending.actor)?.name || "玩家")} 宣布「${escape(pending.move)}」${pending.target ? `，目标：${escape(view.players.find((p) => p.id === pending.target)?.name || "玩家")}` : ""}。${pending.blocked ? `已被 ${escape(pending.block_role)} 阻挡。` : ""}</p><p>请在 QQ 群讨论诈称、质疑和阻挡；相关玩家用网页操作亮牌、失去影响或结算。</p><div class="party-actions">${me && pending.actor !== me.id && !pending.blocked && ["aid","steal","assassinate"].includes(pending.move) ? `<form data-action="c-block"><select name="role">${options((pending.move === "aid" ? ["公爵"] : pending.move === "steal" ? ["上尉","大使","判官"] : ["女爵"]).map((role) => [role,role]))}</select><button>声明阻挡</button></form>` : ""}${me?.hand?.length ? `<form data-action="c-reveal"><select name="card">${options(me.hand.map((role) => [role,role]))}</select><button>失去影响</button></form><form data-action="c-prove"><select name="card">${options(me.hand.map((role) => [role,role]))}</select><button>亮牌证明</button></form>` : ""}${me && pending.must_lose === me.id ? `<form data-action="c-lose"><select name="card">${options(me.hand.map((role) => [role,role]))}</select><button class="primary-action">确认失去影响</button></form>` : ""}${me && pending.exchange && pending.actor === me.id ? `<form data-action="c-exchange"><p>勾选要洗回牌库的牌，最后保留两张。</p>${me.hand.map((role,i) => `<label><input type="checkbox" name="card" value="${escape(role)}">第 ${i+1} 张 ${escape(role)}</label>`).join("")}<button class="primary-action">完成交换</button></form>` : ""}${me && pending.inspection && pending.actor === me.id ? `<div><p>你看到了：${escape(pending.inspection)}</p><button data-action="c-inspect-keep">让对方保留</button><button data-action="c-inspect-change">要求更换</button></div>` : ""}${me && pending.actor === me.id && !pending.must_lose && !pending.exchange && !pending.inspection ? `<button data-action="c-resolve" class="primary-action">确认执行</button><button data-action="c-cancel">取消行动</button>${pending.blocked ? `<button data-action="c-overrule">阻挡被成功质疑，继续执行</button>` : ""}` : ""}</div></section>` : current ? `<section class="party-panel party-controls"><h2>宣布行动</h2><form data-action="c-declare"><label>行动<select name="move">${[["income","收入 +1"],["aid","外援 +2"],["tax","公爵：税收 +3"],["steal","上尉：偷窃 2"],["assassinate","刺客：刺杀（3 币）"],["coup","政变（7 币）"],["exchange","大使 / 判官：交换"]].concat(view.mode !== "basic" ? [["inspect","判官：检视"],["convert","转换阵营"],["embezzle","挪用国库"]] : []).map(([value,label]) => `<option value="${value}">${label}</option>`).join("")}</select></label><label>目标<select name="target">${options(targetOptions)}</select></label><button class="primary-action">宣布行动</button></form></section>` : ""}`;
+    let controls = "";
+    if (pending) {
+      const actor = view.players.find((p) => p.id === pending.actor)?.name || "玩家";
+      const target = view.players.find((p) => p.id === pending.target)?.name || "";
+      const aidRole = isKs ? (view.mode === "ks-speculator" ? "投机者" : "官僚") : "公爵";
+      const stealRoles = isKs ? ["上尉","弄臣"] : isReformation ? ["上尉","判官"] : ["上尉","大使"];
+      const blockRoles = pending.move === "aid" ? [aidRole] : pending.move === "steal" ? stealRoles : ["女爵"];
+      let actions = "";
+      if (me && pending.actor !== me.id && !pending.blocked && ["aid","steal","assassinate"].includes(pending.move)) {
+        actions += `<form data-action="c-block"><select name="role">${options(blockRoles.map((role) => [role,role]))}</select><button>声明阻挡</button></form>`;
+      }
+      if (me?.hand?.length) {
+        const handOptions = options(me.hand.map((role) => [role,role]));
+        actions += `<form data-action="c-reveal"><select name="card">${handOptions}</select><button>失去影响</button></form><form data-action="c-prove"><select name="card">${handOptions}</select><button>亮牌证明</button></form>`;
+      }
+      if (me && pending.must_lose === me.id) {
+        actions += `<form data-action="c-lose"><select name="card">${options(me.hand.map((role) => [role,role]))}</select><button class="primary-action">确认失去影响</button></form>`;
+      }
+      if (me && pending.exchange && pending.actor === me.id) {
+        actions += `<form data-action="c-exchange"><p>勾选要洗回牌库的牌，最后保留两张。</p>${me.hand.map((role,i) => `<label><input type="checkbox" name="card" value="${escape(role)}">第 ${i+1} 张 ${escape(role)}</label>`).join("")}<button class="primary-action">完成交换</button></form>`;
+      }
+      if (me && pending.inspection && pending.actor === me.id) {
+        actions += `<div><p>你看到了：${escape(pending.inspection)}</p><button data-action="c-inspect-keep">让对方保留</button><button data-action="c-inspect-change">要求更换</button></div>`;
+      }
+      if (me && pending.disorder && pending.actor === me.id) {
+        actions += `<form data-action="c-disorder"><p>从手中选一张给目标，再选一张洗回牌库；最后保留两张。</p><label>给目标<select name="to_target">${options(me.hand.map((role) => [role,role]))}</select></label><label>归还牌库<select name="to_deck">${options(me.hand.map((role) => [role,role]))}</select></label><button class="primary-action">完成骚乱</button></form>`;
+      }
+      if (me && pending.actor === me.id && !["must_lose","exchange","inspection","disorder"].some((key) => pending[key])) {
+        actions += `<button data-action="c-resolve" class="primary-action">确认执行</button><button data-action="c-cancel">取消行动</button>${pending.blocked ? '<button data-action="c-overrule">阻挡被成功质疑，继续执行</button>' : ""}`;
+      }
+      controls = `<section class="party-panel party-controls"><h2>待结算行动</h2><p>${escape(actor)} 宣布「${escape(pending.move)}」${target ? `，目标：${escape(target)}` : ""}。${pending.blocked ? `已被 ${escape(pending.block_role)} 阻挡。` : ""}</p><p>在 QQ 群讨论诈称、质疑和阻挡，再由相关玩家在网页确认判定。</p><div class="party-actions">${actions}</div></section>`;
+    } else if (current) {
+      const moves = [["income","收入 +1"],["aid","外援 +2"],["steal","上尉：偷窃 2"],["assassinate","刺客：刺杀（3 币）"],["coup","政变（7 币）"]];
+      if (isKs) moves.push([view.mode === "ks-speculator" ? "invest" : "bribe",view.mode === "ks-speculator" ? "投机者：投资" : "官僚：贿赂"],["disorder","弄臣：骚乱"]);
+      else moves.push(["tax","公爵：税收 +3"],["exchange",isReformation ? "判官：交换" : "大使：交换"]);
+      if (isReformation) moves.push(["inspect","判官：检视"],["convert","转换阵营"],["embezzle","挪用国库"]);
+      controls = `<section class="party-panel party-controls"><h2>宣布行动</h2><form data-action="c-declare"><label>行动<select name="move">${moves.map(([value,label]) => `<option value="${value}">${label}</option>`).join("")}</select></label><label>目标<select name="target">${options(targetOptions)}</select></label><button class="primary-action">宣布行动</button></form></section>`;
+    }
+    return stats + ownHand + controls;
   }
 
   function render() {
     const me = view.me, state = view.state || {};
-    root.innerHTML = `<div class="party-top"><div><a href="./">← 游戏库</a><span class="party-kicker">${escape(view.name)} · ${escape(view.mode === "basic" ? "基础" : view.mode === "advanced" ? "进阶" : "扩展")}</span><h1>${escape(view.name)}</h1><p>房间 ${escape(code)} · ${escape(view.phase === "lobby" ? "等待开局" : view.phase === "finished" ? "游戏结束" : `轮到 ${view.players.find((p) => p.id === view.current)?.name || "玩家"}`)}</p></div><button type="button" data-action="copy-link">复制游玩链接</button></div>
+    root.innerHTML = `<div class="party-top"><div><a href="./">← 游戏库</a><span class="party-kicker">${escape(view.name)} · ${escape(view.mode === "basic" ? "基础" : view.mode === "advanced" ? "进阶" : view.mode.startsWith("ks-") ? "KS 角色包" : "扩展")}</span><h1>${escape(view.name)}</h1><p>房间 ${escape(code)} · ${escape(view.phase === "lobby" ? "等待开局" : view.phase === "finished" ? "游戏结束" : `轮到 ${view.players.find((p) => p.id === view.current)?.name || "玩家"}`)}</p></div><button type="button" data-action="copy-link">复制游玩链接</button></div>
       <div class="party-columns"><aside class="party-sidebar"><h2>玩家 · ${view.players.length}</h2><div class="party-player-list">${view.players.map((p) => `<div class="party-player ${p.id === view.current ? "is-current" : ""}">${avatar(p)}<span><strong>${escape(p.name)}</strong><small>${p.alive ? p.claimed ? "已入座" : "等待入座" : "已出局"}</small></span></div>`).join("")}</div>${!me ? `<div class="party-panel party-claim"><h3>选择自己的 QQ 头像入座</h3><p>朋友之间自行认领身份；再次认领会转移座位。</p>${view.players.map((p) => `<button type="button" data-claim="${escape(p.id)}">${avatar(p)}${escape(p.name)}</button>`).join("")}</div>` : `<p class="party-self">你已入座：${escape(me.name)}</p>`}</aside>
       <div class="party-main">${view.phase === "lobby" ? `<section class="party-panel"><h2>等待房主开局</h2><p>在 QQ 群发送「/桌游 加入」，所有人入局后由房主发送「/桌游 开始」。</p></section>` : game === "cubirds" ? cubirdsBoard() : game === "splendor" ? splendorBoard() : game === "avalon" ? avalonBoard() : coupBoard()}
       <section class="party-panel party-log"><h2>最近动态</h2><ol>${(view.log || []).slice().reverse().map((entry) => `<li>${escape(entry)}</li>`).join("")}</ol></section></div></div>`;
@@ -201,6 +242,7 @@ window.startPartyRoom = async function startPartyRoom({api, code, initial, notif
     if (act === "c-prove") action = {type:"prove",card:data.get("card")};
     if (act === "c-lose") action = {type:"lose_finish",card:data.get("card")};
     if (act === "c-exchange") action = {type:"exchange_finish",cards:data.getAll("card")};
+    if (act === "c-disorder") action = {type:"disorder_finish",to_target:data.get("to_target"),to_deck:data.get("to_deck")};
     if (action) await send(action);
   });
 

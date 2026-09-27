@@ -22,7 +22,7 @@ GAME_LIMITS = {game: limit for game, _, limit in GAMES.values()}
 HELP = (
     "QQ 组局命令：\n"
     "/桌游 列表\n"
-    "/桌游 创建 <游戏名> [进阶/扩展]\n"
+    "/桌游 创建 <游戏名> [进阶/扩展/KS/KS投机者]\n"
     "/桌游 加入｜离开｜开始｜状态｜结束\n"
     "游戏在网站中进行，玩家进入链接后自行选择自己的 QQ 头像和 ID。"
 )
@@ -51,9 +51,9 @@ async def handle_tabletop(event: MessageEvent, args: Message = CommandArg()) -> 
             else:
                 game, game_name, limit = GAMES[parts[1]]
                 variant = parts[2] if len(parts) > 2 else ""
-                mode = "advanced" if game in {"exploding-kittens", "avalon"} and variant == "进阶" else "reformation" if game == "coup" and variant == "扩展" else "basic"
+                mode = "advanced" if game in {"exploding-kittens", "avalon"} and variant == "进阶" else "reformation" if game == "coup" and variant == "扩展" else "ks-bureaucrat" if game == "coup" and variant == "KS" else "ks-speculator" if game == "coup" and variant == "KS投机者" else "basic"
                 data = await web_bridge.create(group_id, user_id, name, game, mode)
-                reply = f"{game_name}{'扩展' if mode == 'reformation' else '进阶' if mode == 'advanced' else ''}房间已创建，房主 {name}。\n支持 {limit} 人；发送 /桌游 加入。\n游玩链接：{web_bridge.link(data['code'])}"
+                reply = f"{game_name}{'KS 角色包' if mode.startswith('ks-') else '扩展' if mode == 'reformation' else '进阶' if mode == 'advanced' else ''}房间已创建，房主 {name}。\n支持 {limit} 人；发送 /桌游 加入。\n游玩链接：{web_bridge.link(data['code'])}"
         else:
             room = await web_bridge.group(group_id)
             code = room["code"]

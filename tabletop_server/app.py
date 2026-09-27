@@ -150,6 +150,13 @@ def health() -> dict[str, str]:
 @app.post("/api/bot/rooms")
 async def create_room(payload: CreateRoom, x_tabletop_admin: str | None = Header(default=None)) -> dict[str, str]:
     _admin(x_tabletop_admin)
+    allowed = {
+        "exploding-kittens": {"basic", "advanced"}, "cubirds": {"basic"},
+        "splendor": {"basic"}, "avalon": {"basic", "advanced"},
+        "coup": {"basic", "reformation", "ks-bureaucrat", "ks-speculator"},
+    }
+    if payload.mode not in allowed[payload.game]:
+        raise HTTPException(400, "所选游戏模式无效。")
     async with lock:
         if any(room.group_id == payload.group_id for room in rooms.values()):
             raise HTTPException(409, "本群已有网页桌游房间。")

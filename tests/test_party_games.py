@@ -79,3 +79,27 @@ def test_coup_coin_action_and_private_cards() -> None:
     game_room.action(actor.qq_id, {"type": "resolve"})
     assert game_room.state["coins"][actor.qq_id] == 3
     assert game_room.state["current"] == 1
+
+
+@pytest.mark.parametrize("mode,move", [("ks-bureaucrat", "bribe"), ("ks-speculator", "invest")])
+def test_coup_ks_replacement_roles(mode: str, move: str) -> None:
+    game_room = room("coup", 2, mode)
+    actor, target = game_room.players
+    assert "弄臣" in game_room.state["deck"] + actor.hand + target.hand
+    game_room.action(actor.qq_id, {"type": "declare", "move": move, "target": target.qq_id})
+    game_room.action(actor.qq_id, {"type": "resolve"})
+    assert game_room.state["coins"][actor.qq_id] == 4
+    if move == "bribe":
+        assert game_room.state["coins"][target.qq_id] == 3
+
+
+def test_coup_jester_disorder_preserves_private_hand_counts() -> None:
+    game_room = room("coup", 2, "ks-bureaucrat")
+    actor, target = game_room.players
+    game_room.action(actor.qq_id, {"type": "declare", "move": "disorder", "target": target.qq_id})
+    game_room.action(actor.qq_id, {"type": "resolve"})
+    assert len(actor.hand) == 4 and len(target.hand) == 1
+    choices = actor.hand[:2]
+    game_room.action(actor.qq_id, {"type": "disorder_finish", "to_target": choices[0], "to_deck": choices[1]})
+    assert len(actor.hand) == 2 and len(target.hand) == 2
+    assert "deck" not in game_room.view()["state"]

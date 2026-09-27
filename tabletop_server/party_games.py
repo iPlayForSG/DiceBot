@@ -487,13 +487,16 @@ class PartyRoom:
 
     # Coup: social bluff adjudication is deliberately player-confirmed. -----
     def _start_coup(self, rng: random.Random) -> None:
-        roles = ["公爵", "上尉", "刺客", "女爵", "判官" if self.mode != "basic" else "大使"]
+        roles = ["公爵", "上尉", "刺客", "女爵", "判官" if self.mode == "reformation" else "大使"]
+        if self.mode.startswith("ks-"):
+            roles[0] = "投机者" if self.mode == "ks-speculator" else "官僚"
+            roles[-1] = "弄臣"
         copies = 5 if len(self.players) > 6 else 3
         deck = [role for role in roles for _ in range(copies)]
         rng.shuffle(deck)
         self.state = {"deck": deck, "coins": {p.qq_id: 2 for p in self.players},
                       "lost": {p.qq_id: [] for p in self.players},
-                      "factions": {p.qq_id: "改革" if i % 2 else "秩序" for i, p in enumerate(self.players)} if self.mode != "basic" else {},
+                      "factions": {p.qq_id: "改革" if i % 2 else "秩序" for i, p in enumerate(self.players)} if self.mode == "reformation" else {},
                       "treasury": 0, "current": 0, "pending": None, "winner": None}
         for player in self.players:
             player.hand = [deck.pop(), deck.pop()]
@@ -517,12 +520,14 @@ class PartyRoom:
                 raise GameError("请先完成上一个行动的争议判定。")
             move = action.get("move")
             target = action.get("target")
-            options = {"income", "aid", "tax", "steal", "assassinate", "coup", "exchange", "inspect", "convert", "embezzle"}
-            if move not in options or (self.mode == "basic" and move in {"inspect", "convert", "embezzle"}):
+            options = {"income", "aid", "tax", "steal", "assassinate", "coup", "exchange", "inspect", "convert", "embezzle", "bribe", "invest", "disorder"}
+            if move not in options or (self.mode != "reformation" and move in {"inspect", "convert", "embezzle"}) or (self.mode.startswith("ks-") and move in {"tax", "exchange"}) or (not self.mode.startswith("ks-") and move in {"bribe", "invest", "disorder"}):
                 raise GameError("当前模式不支持这个行动。")
+            if move == "bribe" and self.mode != "ks-bureaucrat" or move == "invest" and self.mode != "ks-speculator":
+                raise GameError("当前角色组合不支持这个行动。")
             if state["coins"][player.qq_id] >= 10 and move != "coup":
                 raise GameError("拥有至少 10 枚硬币时必须发动政变。")
-            if move in {"steal", "assassinate", "coup", "inspect", "convert"}:
+            if move in {"steal", "assassinate", "coup", "inspect", "convert", "bribe", "invest", "disorder"}:
                 if target not in state["coins"] or not self.player(target).alive or (target == player.qq_id and move != "convert"):
                     raise GameError("请选择另一位在场玩家。")
                 if move in {"steal", "assassinate", "coup", "inspect"} and state["factions"]:
@@ -544,7 +549,8 @@ class PartyRoom:
             if pending["move"] != "aid" and player.qq_id != pending["target"]:
                 raise GameError("只有行动目标可以阻挡。")
             role = action.get("role")
-            allowed = {"aid": {"公爵"}, "steal": {"上尉", "大使", "判官"}, "assassinate": {"女爵"}}[pending["move"]]
+            aid_blocker = "投机者" if self.mode == "ks-speculator" else "官僚" if self.mode == "ks-bureaucrat" else "公爵"
+            allowed = {"aid": {aid_blocker}, "steal": {"上尉", "大使", "判官", "弄臣"}, "assassinate": {"女爵"}}[pending["move"]]
             if role not in allowed:
                 raise GameError("所选角色不能阻挡此行动。")
             pending.update(blocked=True, blocker=player.qq_id, block_role=role)
@@ -571,7 +577,8 @@ class PartyRoom:
             if player.qq_id != (pending["blocker"] if pending["blocked"] else pending["actor"]):
                 raise GameError("只有当前声明角色的玩家可以亮牌证明。")
             role = pending["block_role"] if pending["blocked"] and pending["blocker"] == player.qq_id else {
-                "tax": "公爵", "steal": "上尉", "assassinate": "刺客", "exchange": "判官" if self.mode != "basic" else "大使", "inspect": "判官"
+                "tax": "公爵", "steal": "上尉", "assassinate": "刺客", "exchange": "判官" if self.mode == "reformation" else "大使", "inspect": "判官",
+                "bribe": "官僚", "invest": "投机者", "disorder": "弄臣",
             }.get(pending["move"])
             if action["card"] != role:
                 raise GameError("这张牌不能证明所声明的角色。")
@@ -584,7 +591,7 @@ class PartyRoom:
             self._turn(player)
             if not pending:
                 raise GameError("没有待结算行动。")
-            if any(pending.get(key) for key in ("must_lose", "exchange", "inspection")):
+            if any(pending.get(key) for key in ("must_lose", "exchange", "inspection", "disorder")):
                 raise GameError("请先完成当前影响牌操作。")
             move = pending["move"]
             target = pending["target"]
@@ -592,6 +599,11 @@ class PartyRoom:
                 if move == "income": state["coins"][player.qq_id] += 1
                 elif move == "aid": state["coins"][player.qq_id] += 2
                 elif move == "tax": state["coins"][player.qq_id] += 3
+                elif move == "bribe":
+                    state["coins"][player.qq_id] += 2
+                    state["coins"][target] += 1
+                elif move == "invest":
+                    state["coins"][player.qq_id] += min(5, state["coins"][target])
                 elif move == "steal":
                     amount = min(2, state["coins"][target])
                     state["coins"][target] -= amount
@@ -613,6 +625,16 @@ class PartyRoom:
                         raise GameError("目标已没有影响牌。")
                     pending["inspection"] = random.choice(target_player.hand)
                     self._record(f"{player.name} 查看了 {target_player.name} 的一张影响牌。")
+                    return
+                elif move == "disorder":
+                    target_player = self.player(target)
+                    if not target_player.hand or not state["deck"]:
+                        raise GameError("目标或牌库没有足够影响牌。")
+                    transferred = random.choice(target_player.hand)
+                    target_player.hand.remove(transferred)
+                    player.hand.extend((transferred, state["deck"].pop()))
+                    pending["disorder"] = True
+                    self._record(f"{player.name} 发动弄臣骚乱，须把两张牌分别归还目标和牌库。")
                     return
                 elif move == "convert":
                     cost = 1 if target == player.qq_id else 2
@@ -653,6 +675,22 @@ class PartyRoom:
                 target_player.hand.append(state["deck"].pop())
                 self._record(f"{target_player.name} 按判官要求更换了一张影响牌。")
             state["pending"] = None
+            self._coup_end()
+        elif kind == "disorder_finish":
+            self._turn(player)
+            if not pending or pending["actor"] != player.qq_id or not pending.get("disorder"):
+                raise GameError("当前没有待完成的弄臣骚乱。")
+            to_target, to_deck = action.get("to_target"), action.get("to_deck")
+            chosen = Counter([to_target, to_deck])
+            if any(count > player.hand.count(role) for role, count in chosen.items()):
+                raise GameError("请选择手中两张不同实体牌归还。")
+            player.hand.remove(to_target)
+            player.hand.remove(to_deck)
+            self.player(pending["target"]).hand.append(to_target)
+            state["deck"].append(to_deck)
+            random.shuffle(state["deck"])
+            state["pending"] = None
+            self._record(f"{player.name} 完成弄臣骚乱。")
             self._coup_end()
         elif kind == "lose_finish":
             if not pending or pending.get("must_lose") != player.qq_id or action.get("card") not in player.hand:
