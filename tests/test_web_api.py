@@ -19,7 +19,19 @@ def test_lobby_to_private_game_api(monkeypatch, tmp_path) -> None:
             "qq_id": "10002", "name": "莉莉"
         }).status_code == 200
         token = client.post(f"/api/rooms/{code}/claim", json={"qq_id": "10001"}).json()["token"]
-        assert client.post(f"/api/bot/rooms/{code}/start", headers=admin).status_code == 200
+        second_token = client.post(f"/api/rooms/{code}/claim", json={"qq_id": "10002"}).json()["token"]
+        with client.websocket_connect(f"/ws/{code}") as first_socket, client.websocket_connect(f"/ws/{code}") as second_socket:
+            first_socket.send_text(token)
+            second_socket.send_text(second_token)
+            first_socket.receive_json()
+            second_socket.receive_json()
+            assert client.post(f"/api/bot/rooms/{code}/start", headers=admin).status_code == 200
+            first_view = first_socket.receive_json()
+            second_view = second_socket.receive_json()
+            assert first_view["me"]["id"] == "10001"
+            assert second_view["me"]["id"] == "10002"
+            assert first_view["me"]["hand"] != second_view["me"]["hand"]
+            assert "hand" not in first_view["players"][1]
         public = client.get(f"/api/rooms/{code}").json()
         private = client.get(f"/api/rooms/{code}/me", headers={"Authorization": f"Bearer {token}"}).json()
         assert public["me"] is None

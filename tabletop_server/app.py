@@ -40,7 +40,7 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "X-Tabletop-Admin"],
 )
 rooms: dict[str, GameRoom] = {}
-connections: dict[str, set[WebSocket]] = {}
+connections: dict[str, dict[WebSocket, str]] = {}
 lock = asyncio.Lock()
 
 
@@ -100,12 +100,16 @@ def _avatar(qq_id: str, content: str | None) -> bool:
 
 
 async def _broadcast(room: GameRoom) -> None:
-    for websocket in list(connections.get(room.code, set())):
+    for websocket, token in list(connections.get(room.code, {}).items()):
         try:
-            player = next((p for p in room.players if p.token == websocket.query_params.get("token")), None)
-            await websocket.send_json(room.view(player.qq_id if player else None))
+            player = next((p for p in room.players if p.token and secrets.compare_digest(p.token, token)), None)
+            if player is None:
+                await websocket.close(code=1008)
+                connections[room.code].pop(websocket, None)
+                continue
+            await websocket.send_json(room.view(player.qq_id))
         except Exception:
-            connections[room.code].discard(websocket)
+            connections[room.code].pop(websocket, None)
 
 
 class BotPlayer(BaseModel):
@@ -218,7 +222,7 @@ async def close_room(code: str, x_tabletop_admin: str | None = Header(default=No
         room = _room(code)
         del rooms[room.code]
         _save()
-        for websocket in list(connections.get(room.code, set())):
+        for websocket in list(connections.get(room.code, {})):
             await websocket.close(code=1001)
         connections.pop(room.code, None)
     return {"status": "closed"}
@@ -292,16 +296,23 @@ async def get_avatar(qq_id: str) -> FileResponse:
 @app.websocket("/ws/{code}")
 async def room_socket(websocket: WebSocket, code: str) -> None:
     room = rooms.get(code.upper())
-    token = websocket.query_params.get("token", "")
-    player = next((p for p in room.players if p.token and secrets.compare_digest(p.token, token)), None) if room else None
-    if not player:
+    if not room:
         await websocket.close(code=1008)
         return
     await websocket.accept()
-    connections.setdefault(room.code, set()).add(websocket)
+    try:
+        token = await asyncio.wait_for(websocket.receive_text(), timeout=8)
+    except (asyncio.TimeoutError, WebSocketDisconnect):
+        await websocket.close(code=1008)
+        return
+    player = next((p for p in room.players if p.token and secrets.compare_digest(p.token, token)), None)
+    if not player:
+        await websocket.close(code=1008)
+        return
+    connections.setdefault(room.code, {})[websocket] = token
     await websocket.send_json(room.view(player.qq_id))
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        connections[room.code].discard(websocket)
+        connections[room.code].pop(websocket, None)

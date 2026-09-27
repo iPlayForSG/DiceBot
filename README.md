@@ -64,6 +64,18 @@ uv run python scripts/import_tts.py "D:\Steam\steamapps\common\Tabletop Simulato
 
 如果只发布 GitHub Pages，静态页面会出现，但不能建房和实时游玩。发布依赖 GitHub 仓库权限和一个公网后端部署位置。
 
+### 用 Cloudflare Tunnel 暴露本机实时服务
+
+当前本机已安装 Cloudflare 官方 `cloudflared`。另开终端启动一个临时隧道：
+
+```powershell
+cloudflared tunnel --url http://127.0.0.1:8765 --no-autoupdate
+```
+
+它会输出一个随机的 `https://...trycloudflare.com` 地址。把这个地址设为仓库变量 `TABLETOP_API_URL`，重新运行 Pages 工作流；`.env` 的 `TABLETOP_ALLOWED_ORIGINS` 要包含 `https://iplayforsg.github.io`。本机实时服务和隧道进程需要一直运行。Cloudflare [将 Quick Tunnel 定位为测试用途](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/do-more-with-tunnels/trycloudflare/)；进程重启后地址可能变化，届时需要更新仓库变量并重新发布。
+
+固定地址应使用 Cloudflare 账号中托管的域名创建**命名隧道**，把其 Public Hostname 的 HTTP 源指向 `127.0.0.1:8765`。云端仍以 HTTPS/WSS 对外。具体创建流程见 [Cloudflare 文档](https://developers.cloudflare.com/tunnel/features/locally-managed-tunnels/create-local-tunnel/)。
+
 ## 验证
 
 ```powershell

@@ -164,9 +164,9 @@ function connect() {
   if (!token) return;
   if (socket) socket.close();
   const wsBase = API.replace(/^http/, "ws");
-  socket = new WebSocket(`${wsBase}/ws/${code}?token=${encodeURIComponent(token)}`);
+  socket = new WebSocket(`${wsBase}/ws/${code}`);
   $("connection").textContent = "连接中…";
-  socket.onopen = () => $("connection").textContent = "● 实时在线";
+  socket.onopen = () => {socket.send(token); $("connection").textContent = "● 实时在线";};
   socket.onmessage = (event) => render(JSON.parse(event.data));
   socket.onclose = (event) => {
     $("connection").textContent = "● 已断线，重连中";
