@@ -61,13 +61,23 @@ CLEANUP_INTERVAL_SECONDS = 5
 CLAIM_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
 
-def _restore() -> None:
+def _restore() -> bool:
     if not ROOMS_FILE.exists():
-        return
+        return False
+    migrated = False
     for raw in json.loads(ROOMS_FILE.read_text(encoding="utf-8")):
+        if raw.get("phase", "lobby") == "lobby":
+            if "created_at" not in raw:
+                raw["created_at"] = time.time()
+                migrated = True
+            for saved_player in raw["players"]:
+                if "claim_code" not in saved_player:
+                    saved_player["token"] = None
+                    migrated = True
         raw["players"] = [Player(**player) for player in raw["players"]]
         room = PartyRoom(**raw) if raw.get("game") in NAMES else GameRoom(**raw)
         rooms[room.code] = room
+    return migrated
 
 
 def _save() -> None:
@@ -76,7 +86,8 @@ def _save() -> None:
     temporary.replace(ROOMS_FILE)
 
 
-_restore()
+if _restore():
+    _save()
 
 
 def _room(code: str) -> GameRoom | PartyRoom:
@@ -412,4 +423,4 @@ async def room_socket(websocket: WebSocket, code: str) -> None:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        connections[room.code].pop(websocket, None)
+        connections.get(room.code, {}).pop(websocket, None)

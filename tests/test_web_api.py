@@ -1,5 +1,8 @@
 from fastapi.testclient import TestClient
+import json
+import pytest
 import time
+from starlette.websockets import WebSocketDisconnect
 
 from tabletop_server import app as service
 
@@ -87,10 +90,36 @@ def test_idle_lobby_cleanup_runs_without_requests(monkeypatch, tmp_path) -> None
             "group_id": "idle-group", "player": {"qq_id": "10001", "name": "甲"}
         })
         code = created.json()["code"]
-        service.rooms[code].created_at -= 301
-        deadline = time.monotonic() + 1
-        while code in service.rooms and time.monotonic() < deadline:
-            time.sleep(0.02)
-        assert code not in service.rooms
+        token = client.post(f"/api/rooms/{code}/claim", json={
+            "claim_code": created.json()["claim_code"]
+        }).json()["token"]
+        with client.websocket_connect(f"/ws/{code}") as socket:
+            socket.send_text(token)
+            socket.receive_json()
+            service.rooms[code].created_at -= 301
+            deadline = time.monotonic() + 1
+            while code in service.rooms and time.monotonic() < deadline:
+                time.sleep(0.02)
+            assert code not in service.rooms
+            with pytest.raises(WebSocketDisconnect):
+                socket.receive_json()
         assert client.get(f"/api/rooms/{code}").status_code == 404
+    service.rooms.clear()
+
+
+def test_old_lobby_requires_new_identity_code_after_restore(monkeypatch, tmp_path) -> None:
+    path = tmp_path / "rooms.json"
+    path.write_text(json.dumps([{
+        "code": "OLDROOM1", "group_id": "old-group", "phase": "lobby",
+        "players": [{"qq_id": "10001", "name": "甲", "token": "legacy-browser-token"}],
+    }]), encoding="utf-8")
+    monkeypatch.setattr(service, "ROOMS_FILE", path)
+    service.rooms.clear()
+    assert service._restore()
+    service._save()
+    room = service.rooms["OLDROOM1"]
+    assert room.players[0].token is None
+    assert room.players[0].claim_code is None
+    assert room.created_at <= time.time()
+    assert json.loads(path.read_text(encoding="utf-8"))[0]["created_at"]
     service.rooms.clear()

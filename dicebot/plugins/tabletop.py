@@ -60,8 +60,11 @@ async def handle_tabletop(bot: Bot, event: MessageEvent, args: Message = Command
                         f"游玩链接：{web_bridge.link(data['code'])}\n请在网页输入身份码认领座位，不要在群里转发身份码。"
                     ))
                 except Exception:
-                    await web_bridge.stop(data["code"])
-                    reply = "组局未完成：Bot 无法私聊房主。请确认本群已开启“允许群成员私聊”，然后重新创建。"
+                    try:
+                        await web_bridge.stop(data["code"])
+                        reply = "组局未完成：Bot 无法私聊房主。请确认本群已开启“允许群成员私聊”，然后重新创建。"
+                    except web_bridge.BridgeError:
+                        reply = f"Bot 无法私聊房主，房间 {data['code']} 可能仍占用；请确认本群已开启“允许群成员私聊”，房主可发送 /桌游 取消 {data['code']}。"
                 else:
                     reply = (
                         f"{game_name}{'KS 角色包' if mode.startswith('ks-') else '扩展' if mode == 'reformation' else '进阶' if mode == 'advanced' else ''}房间已创建，房主 {name}。\n"
@@ -91,8 +94,11 @@ async def handle_tabletop(bot: Bot, event: MessageEvent, args: Message = Command
                         ))
                     except Exception:
                         if data["status"] == "joined":
-                            await web_bridge.leave(code, user_id)
-                        reply = "加入未完成：Bot 无法私聊你。请确认本群已开启“允许群成员私聊”，然后重新发送加入命令。"
+                            try:
+                                await web_bridge.leave(code, user_id)
+                            except web_bridge.BridgeError:
+                                pass
+                        reply = "加入未完成：Bot 无法私聊你。请确认本群已开启“允许群成员私聊”，然后重新发送带房间码的加入命令。"
                     else:
                         reply = f"{name} {'已加入' if data['status'] == 'joined' else '已在房间中'}，身份码已私聊发送。游玩链接：{web_bridge.link(code)}"
             elif command == "离开":
