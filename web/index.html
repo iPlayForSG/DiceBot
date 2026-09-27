@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4ecdc">
+  <title>桌游夜航 · 炸弹猫</title>
+  <meta name="description" content="QQ 群组局，在浏览器里和朋友一起玩炸弹猫。">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./style.css">
+  <script src="./config.js" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="./"><span class="brand-mark">✦</span><span>桌游夜航</span></a>
+    <span class="brand-note">好玩的人，总会在这里相遇。</span>
+    <span class="header-right">今晚开一局 <span aria-hidden="true">✷</span></span>
+  </header>
+
+  <main id="landing" class="landing" hidden>
+    <div class="landing-art" aria-hidden="true"><span class="big-cat">=^._.^=</span><span class="sun">✳</span></div>
+    <div class="landing-copy">
+      <span class="eyebrow">QQ 群组局 · 网页游玩</span>
+      <h1>朋友到齐，<br><em>好戏开牌。</em></h1>
+      <p>让 QQ Bot 帮你们建房。在这里选好自己的头像，抽牌、出牌、反制，然后祈祷别抽到那只猫。</p>
+      <form id="room-form" class="room-form"><label for="room-input">输入房间号</label><div><input id="room-input" autocomplete="off" maxlength="8" placeholder="例如 A7K3F9Q2" required><button type="submit">进入牌桌 →</button></div></form>
+      <p class="small-note">还没有房间？在 QQ 群发送「/桌游 创建 炸弹猫」。</p>
+    </div>
+  </main>
+
+  <main id="game" class="game-layout" hidden>
+    <aside class="left-rail">
+      <div class="room-identity"><span>房间号</span><div><strong id="room-code">—</strong><button id="copy-link" type="button" title="复制链接">复制链接</button></div></div>
+      <div class="rail-heading"><h2>玩家</h2><span id="player-count">0/5</span></div>
+      <div id="players" class="players"></div>
+      <div class="rail-foot">牌有时会骗人，<br>朋友通常不会。 <span>✻</span></div>
+    </aside>
+
+    <section class="table-zone" aria-label="游戏牌桌">
+      <div class="table-topline"><span id="phase-label">等待开局</span><span id="connection" class="connection">连接中…</span></div>
+      <div class="felt">
+        <div class="felt-scribble left">小小的运气，<br>大大的快乐。 ✳</div>
+        <div class="felt-scribble right">别慌，<br>只是概率问题。</div>
+        <div class="piles">
+          <button id="deck" class="pile" type="button" title="抽牌">
+            <img src="./public/assets/exploding-kittens/card-back.jpg" alt="抽牌堆">
+            <strong>抽牌堆</strong><span id="deck-count">— 张</span>
+          </button>
+          <div class="pile"><div id="discard-card" class="discard-empty">弃牌<br>堆</div><strong>弃牌堆</strong><span id="discard-count">— 张</span></div>
+        </div>
+      </div>
+      <div id="hand-area" class="hand-area"><div class="hand-heading"><h2>我的手牌</h2><div><span id="hand-hint">请选择一张牌</span><button id="zoom-card" type="button" hidden>放大选中牌</button></div></div><div id="hand" class="hand"></div></div>
+    </section>
+
+    <aside class="right-rail">
+      <div class="turn-banner"><span>当前回合</span><strong id="turn-name">等待玩家</strong><small id="turn-detail">在 QQ 群邀请朋友加入</small></div>
+      <div id="claim-panel" class="claim-panel" hidden><h2>选好你的座位</h2><p>点击自己的 QQ 头像进入。再次选择同一身份会把座位转移到当前浏览器。</p><div id="claim-list"></div></div>
+      <div id="action-panel" class="action-panel" hidden>
+        <h2>本回合操作</h2>
+        <label for="target">指定玩家</label><select id="target"><option value="">选择玩家</option></select>
+        <div id="position-row" hidden><label for="position">炸弹放回位置</label><input id="position" type="number" min="0" value="0"><small>0 = 牌堆顶；数字越大越靠近牌堆底</small></div>
+        <button id="primary-action" class="primary-action" type="button">抽一张</button>
+        <button id="secondary-action" class="secondary-action" type="button" hidden>出牌</button>
+        <p id="action-hint" class="action-hint">抽牌会结束一次回合。</p>
+      </div>
+      <div class="log-heading"><h2>游戏记录</h2><span>最近动态</span></div><div id="log" class="log"></div>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+  <dialog id="peek-dialog"><form method="dialog"><button class="dialog-close" aria-label="关闭">×</button><h2>牌堆顶的三张牌</h2><div id="peek-cards" class="peek-cards"></div><button class="primary-action">知道了</button></form></dialog>
+  <dialog id="card-dialog"><form method="dialog"><button class="dialog-close" aria-label="关闭">×</button><h2 id="card-title">卡牌</h2><img id="card-full" class="card-full" alt="选中牌的大图"><button class="primary-action">关闭</button></form></dialog>
+</body>
+</html>

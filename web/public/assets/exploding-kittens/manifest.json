@@ -1,0 +1,351 @@
+{
+  "workshop": "https://steamcommunity.com/sharedfiles/filedetails/?id=2375784308",
+  "creator": "ChopDaSushi",
+  "source_image_urls": {
+    "FaceURL": "http://cloud-3.steamusercontent.com/ugc/1753558621497484363/0E5B1D88F4F968A85D32D56DD8BAB6F925A7E65C/",
+    "BackURL": "http://cloud-3.steamusercontent.com/ugc/1756935222382148961/EB4CCEB5355782345936B74EFF8E0A1B7ACCBAEE/",
+    "NumWidth": 10,
+    "NumHeight": 7,
+    "BackIsHidden": true,
+    "UniqueBack": false,
+    "Type": 0
+  },
+  "cards": [
+    {
+      "id": "c00",
+      "face": 37,
+      "kind": "skip",
+      "image": "card-37.jpg"
+    },
+    {
+      "id": "c01",
+      "face": 33,
+      "kind": "attack",
+      "image": "card-33.jpg"
+    },
+    {
+      "id": "c02",
+      "face": 21,
+      "kind": "nope",
+      "image": "card-21.jpg"
+    },
+    {
+      "id": "c03",
+      "face": 22,
+      "kind": "nope",
+      "image": "card-22.jpg"
+    },
+    {
+      "id": "c04",
+      "face": 15,
+      "kind": "shuffle",
+      "image": "card-15.jpg"
+    },
+    {
+      "id": "c05",
+      "face": 20,
+      "kind": "nope",
+      "image": "card-20.jpg"
+    },
+    {
+      "id": "c06",
+      "face": 6,
+      "kind": "cat",
+      "image": "card-06.jpg"
+    },
+    {
+      "id": "c07",
+      "face": 5,
+      "kind": "cat",
+      "image": "card-05.jpg"
+    },
+    {
+      "id": "c08",
+      "face": 14,
+      "kind": "see",
+      "image": "card-14.jpg"
+    },
+    {
+      "id": "c09",
+      "face": 8,
+      "kind": "cat",
+      "image": "card-08.jpg"
+    },
+    {
+      "id": "c10",
+      "face": 7,
+      "kind": "cat",
+      "image": "card-07.jpg"
+    },
+    {
+      "id": "c11",
+      "face": 4,
+      "kind": "cat",
+      "image": "card-04.jpg"
+    },
+    {
+      "id": "c12",
+      "face": 19,
+      "kind": "nope",
+      "image": "card-19.jpg"
+    },
+    {
+      "id": "c13",
+      "face": 35,
+      "kind": "skip",
+      "image": "card-35.jpg"
+    },
+    {
+      "id": "c14",
+      "face": 6,
+      "kind": "cat",
+      "image": "card-06.jpg"
+    },
+    {
+      "id": "c15",
+      "face": 9,
+      "kind": "see",
+      "image": "card-09.jpg"
+    },
+    {
+      "id": "c16",
+      "face": 5,
+      "kind": "cat",
+      "image": "card-05.jpg"
+    },
+    {
+      "id": "c17",
+      "face": 39,
+      "kind": "favor",
+      "image": "card-39.jpg"
+    },
+    {
+      "id": "c18",
+      "face": 18,
+      "kind": "nope",
+      "image": "card-18.jpg"
+    },
+    {
+      "id": "c19",
+      "face": 5,
+      "kind": "cat",
+      "image": "card-05.jpg"
+    },
+    {
+      "id": "c20",
+      "face": 25,
+      "kind": "favor",
+      "image": "card-25.jpg"
+    },
+    {
+      "id": "c21",
+      "face": 7,
+      "kind": "cat",
+      "image": "card-07.jpg"
+    },
+    {
+      "id": "c22",
+      "face": 24,
+      "kind": "favor",
+      "image": "card-24.jpg"
+    },
+    {
+      "id": "c23",
+      "face": 8,
+      "kind": "cat",
+      "image": "card-08.jpg"
+    },
+    {
+      "id": "c24",
+      "face": 38,
+      "kind": "attack",
+      "image": "card-38.jpg"
+    },
+    {
+      "id": "c25",
+      "face": 7,
+      "kind": "cat",
+      "image": "card-07.jpg"
+    },
+    {
+      "id": "c26",
+      "face": 5,
+      "kind": "cat",
+      "image": "card-05.jpg"
+    },
+    {
+      "id": "c27",
+      "face": 4,
+      "kind": "cat",
+      "image": "card-04.jpg"
+    },
+    {
+      "id": "c28",
+      "face": 23,
+      "kind": "favor",
+      "image": "card-23.jpg"
+    },
+    {
+      "id": "c29",
+      "face": 6,
+      "kind": "cat",
+      "image": "card-06.jpg"
+    },
+    {
+      "id": "c30",
+      "face": 11,
+      "kind": "see",
+      "image": "card-11.jpg"
+    },
+    {
+      "id": "c31",
+      "face": 12,
+      "kind": "see",
+      "image": "card-12.jpg"
+    },
+    {
+      "id": "c32",
+      "face": 34,
+      "kind": "skip",
+      "image": "card-34.jpg"
+    },
+    {
+      "id": "c33",
+      "face": 10,
+      "kind": "see",
+      "image": "card-10.jpg"
+    },
+    {
+      "id": "c34",
+      "face": 8,
+      "kind": "cat",
+      "image": "card-08.jpg"
+    },
+    {
+      "id": "c35",
+      "face": 7,
+      "kind": "cat",
+      "image": "card-07.jpg"
+    },
+    {
+      "id": "c36",
+      "face": 4,
+      "kind": "cat",
+      "image": "card-04.jpg"
+    },
+    {
+      "id": "c37",
+      "face": 16,
+      "kind": "shuffle",
+      "image": "card-16.jpg"
+    },
+    {
+      "id": "c38",
+      "face": 6,
+      "kind": "cat",
+      "image": "card-06.jpg"
+    },
+    {
+      "id": "c39",
+      "face": 4,
+      "kind": "cat",
+      "image": "card-04.jpg"
+    },
+    {
+      "id": "c40",
+      "face": 36,
+      "kind": "skip",
+      "image": "card-36.jpg"
+    },
+    {
+      "id": "c41",
+      "face": 17,
+      "kind": "shuffle",
+      "image": "card-17.jpg"
+    },
+    {
+      "id": "c42",
+      "face": 3,
+      "kind": "attack",
+      "image": "card-03.jpg"
+    },
+    {
+      "id": "c43",
+      "face": 32,
+      "kind": "attack",
+      "image": "card-32.jpg"
+    },
+    {
+      "id": "c44",
+      "face": 13,
+      "kind": "shuffle",
+      "image": "card-13.jpg"
+    },
+    {
+      "id": "c45",
+      "face": 8,
+      "kind": "cat",
+      "image": "card-08.jpg"
+    },
+    {
+      "id": "c46",
+      "face": 2,
+      "kind": "bomb",
+      "image": "card-02.jpg"
+    },
+    {
+      "id": "c47",
+      "face": 1,
+      "kind": "bomb",
+      "image": "card-01.jpg"
+    },
+    {
+      "id": "c48",
+      "face": 0,
+      "kind": "bomb",
+      "image": "card-00.jpg"
+    },
+    {
+      "id": "c49",
+      "face": 40,
+      "kind": "bomb",
+      "image": "card-40.jpg"
+    },
+    {
+      "id": "c50",
+      "face": 31,
+      "kind": "defuse",
+      "image": "card-31.jpg"
+    },
+    {
+      "id": "c51",
+      "face": 30,
+      "kind": "defuse",
+      "image": "card-30.jpg"
+    },
+    {
+      "id": "c52",
+      "face": 29,
+      "kind": "defuse",
+      "image": "card-29.jpg"
+    },
+    {
+      "id": "c53",
+      "face": 28,
+      "kind": "defuse",
+      "image": "card-28.jpg"
+    },
+    {
+      "id": "c54",
+      "face": 27,
+      "kind": "defuse",
+      "image": "card-27.jpg"
+    },
+    {
+      "id": "c55",
+      "face": 26,
+      "kind": "defuse",
+      "image": "card-26.jpg"
+    }
+  ]
+}

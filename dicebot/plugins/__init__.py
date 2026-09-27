@@ -1,0 +1,2 @@
+"""NoneBot plugin package."""
+
