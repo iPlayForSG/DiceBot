@@ -7,7 +7,7 @@ window.startWorkshopRoom = function startWorkshopRoom({api, code, initial, notif
     "azul":"花砖物语", "flip-city":"翻转城市", "hanamikoji":"花见小路"};
   const colors = {w:"白",u:"蓝",g:"绿",r:"红",b:"黑"};
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]);
-  const card = (c, controls = false, interrupt = false) => `<figure class="workshop-card"><img src="./${esc(c.image)}" alt="${esc(c.name)}" loading="lazy"><figcaption>${esc(c.name)}</figcaption>${controls || interrupt ? `<div class="workshop-card-actions">${game === "sushi-go" ? `<button data-action="pick" data-card="${c.id}">暗选</button>` : interrupt ? `<button data-action="interrupt" data-card="${c.id}">打断</button>` : `<button data-action="play" data-card="${c.id}">打出</button><button data-action="discard" data-card="${c.id}">弃掉</button><button data-action="pass" data-card="${c.id}">传牌</button>`}</div>` : ""}</figure>`;
+  const card = (c, controls = false, interrupt = false) => `<figure class="workshop-card"><img src="./${esc(c.image)}" alt="${esc(c.name)}" loading="lazy"><figcaption>${esc(c.name)}</figcaption>${controls || interrupt ? `<div class="workshop-card-actions">${game === "sushi-go" ? `<button data-action="pick" data-card="${c.id}">暗选</button><label><input type="checkbox" data-sushi-choice value="${c.id}">筷子选牌</label>` : interrupt ? `<button data-action="interrupt" data-card="${c.id}">打断</button>` : `<button data-action="play" data-card="${c.id}">打出</button><button data-action="discard" data-card="${c.id}">弃掉</button><button data-action="pass" data-card="${c.id}">传牌</button>`}</div>` : ""}</figure>`;
   let view = initial;
   let token = localStorage.getItem(`dicebot:${code}`);
   let socket = null;
@@ -40,6 +40,7 @@ window.startWorkshopRoom = function startWorkshopRoom({api, code, initial, notif
     const me = view.me;
     const canAct = view.phase === "playing" && view.current === me?.id;
     const owner = me && view.players[0]?.id === me.id;
+    const myTable = view.players.find(p => p.id === me?.id)?.table || [];
     const targets = view.players.filter(p => p.id !== me?.id);
     root.innerHTML = `<header class="workshop-header"><a href="./" class="workshop-back">← 游戏库</a><div><span class="eyebrow">${esc(code)} · 第 ${view.round} 轮</span><h1>${esc(names[game])}</h1></div><a class="workshop-rules" href="./public/rules/${game}.pdf" target="_blank" rel="noopener">阅读 PDF 规则书 ↗</a></header>
       <div class="workshop-note">这是一张与朋友共用的数字牌桌。牌堆与手牌由服务器保管；牌面效果、计分和胜负请依据规则书一起结算。</div>
@@ -54,7 +55,7 @@ window.startWorkshopRoom = function startWorkshopRoom({api, code, initial, notif
       ${game === "once-upon-a-time" && canAct ? `<button data-action="declare_win">以结局牌结束故事</button>` : ""}
       ${owner && ["sushi-go","love-letter","azul","hanamikoji"].includes(game) ? `<button data-action="next-round">开始下一轮</button>` : ""}</section>
       ${game === "azul" ? `<section class="workshop-panel"><h2>花砖工厂</h2><p>选择一处及一种颜色，拿取该处全部同色花砖；对照规则书在自己的图板上摆放、计分。</p><div class="workshop-factories">${view.factories.map((f,i)=> `<div><strong>工厂 ${i+1}</strong><div>${tiles(f)}</div>${[...new Set(f)].map(c=>`<button data-action="tile" data-source="${i}" data-color="${c}" ${!canAct?"disabled":""}>取${colors[c]}</button>`).join("")}</div>`).join("")}<div><strong>中央</strong><div>${tiles(view.center)}</div>${[...new Set(view.center)].map(c=>`<button data-action="tile" data-source="-1" data-color="${c}" ${!canAct?"disabled":""}>取${colors[c]}</button>`).join("")}</div></div><h3>我已取的花砖</h3><div>${tiles(view.myTiles)}</div><div class="workshop-controls"><select id="workshop-color"><option value="">选择颜色</option>${Object.entries(colors).map(([c,n])=>`<option value="${c}">${n}</option>`).join("")}</select><select id="workshop-row">${[1,2,3,4,5].map(n=>`<option value="${n-1}">第 ${n} 行</option>`).join("")}</select><button data-action="place_tile">放到图板</button><button data-action="resolve_pattern">完成整行</button></div><h3>我的图板</h3>${view.myPattern.map((r,i)=>`<p>第 ${i+1} 行：${tiles(r)} ${r.length}/${i+1}</p>`).join("")}<p>墙面：${tiles(view.myWall)}</p></section>` : ""}
-      ${game === "sushi-go" ? `<section class="workshop-panel"><h2>同步选牌</h2><p>${view.picked ? "你已暗选，等待其他玩家。" : "从下方手牌选一张。所有玩家选好后会同时亮牌并传手牌。"} 已选 ${view.pickedCount}/${view.players.length} 人。</p></section>` : ""}
+      ${game === "sushi-go" ? `<section class="workshop-panel"><h2>同步选牌</h2><p>${view.picked ? "你已暗选，等待其他玩家。" : "从下方手牌选一张。所有玩家选好后会同时亮牌并传手牌。"} 已选 ${view.pickedCount}/${view.players.length} 人。</p>${me && !view.picked && myTable.some(c=>c.name === "筷子") && me.hand.length >= 2 ? `<p>已在先前回合打出筷子？勾选下方两张牌，再使用筷子。</p><button data-action="pick-two">使用筷子暗选两张</button>` : ""}</section>` : ""}
       ${game === "flip-city" ? `<section class="workshop-panel"><h2>公共供应</h2><p>购买或开发的费用请按牌面核对；本桌保管个人牌堆、弃牌堆和卡牌两面。</p><div class="workshop-cards">${view.market.map(({card:c,count})=>`<figure class="workshop-card"><img src="./${esc(c.image)}" alt="城市卡"><figcaption>剩余 ${count} 张</figcaption>${canAct?`<div class="workshop-card-actions"><button data-action="buy" data-card="${c.id}">购买</button>${c.alternate_image?`<button data-action="develop" data-card="${c.id}">开发</button>`:""}</div>`:""}</figure>`).join("")}</div><h3>我的弃牌堆</h3><div class="workshop-cards">${(me?.discard||[]).map(c=>`<figure class="workshop-card"><img src="./${esc(c.image)}" alt="弃牌"><figcaption>城市卡</figcaption>${canAct&&c.alternate_image?`<div class="workshop-card-actions"><button data-action="flip_card" data-card="${c.id}">翻面</button></div>`:""}</figure>`).join("")||"暂无弃牌"}</div></section>` : ""}
       <section class="workshop-panel"><h2>${game === "azul" ? "玩家图板" : "桌面上的牌"}</h2>${view.players.map(p=> `<div class="workshop-table-row"><h3>${esc(p.name)}</h3>${game === "azul" ? `<div class="workshop-public-board">${p.pattern.map((r,i)=>`<div><strong>第 ${i+1} 行</strong>${tiles(r)}<small>${r.length}/${i+1}</small></div>`).join("")}<p>墙面：${tiles(p.wall)}</p><p>待摆放：${tiles(p.tiles)}</p></div>` : `<div class="workshop-cards">${p.table.map(c=>card(c)).join("") || `<p>暂无公开的牌</p>`}</div>`}</div>`).join("")}</section>
       ${view.discardCards.length ? `<section class="workshop-panel"><h2>公开弃牌</h2><div class="workshop-cards">${view.discardCards.map(c=>card(c)).join("")}</div></section>` : ""}
@@ -64,6 +65,12 @@ window.startWorkshopRoom = function startWorkshopRoom({api, code, initial, notif
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     const kind = button.dataset.action;
+    if (kind === "pick-two") {
+      const cards = [...root.querySelectorAll("[data-sushi-choice]:checked")].map(input => input.value);
+      if (cards.length !== 2) return notify("请勾选两张不同的手牌。");
+      await send({type:"pick_two",cards});
+      return;
+    }
     const target = root.querySelector("#workshop-target")?.value || "";
     if (["pass","eliminate"].includes(kind) && !target) return notify("请先选择其他玩家。");
     const action = {type:kind, card_id:button.dataset.card, target};

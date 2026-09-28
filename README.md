@@ -73,7 +73,9 @@ uv run python bot.py
 
 第二批模组来自 [情书](https://steamcommunity.com/sharedfiles/filedetails/?id=2214094835)、[从前从前](https://steamcommunity.com/sharedfiles/filedetails/?id=753627805)、[寿司 Go 中文版](https://steamcommunity.com/sharedfiles/filedetails/?id=776875059)、[花砖物语](https://steamcommunity.com/sharedfiles/filedetails/?id=2954721315)、[翻转城市](https://steamcommunity.com/sharedfiles/filedetails/?id=965115433)、[花见小路](https://steamcommunity.com/sharedfiles/filedetails/?id=2229350507)。图片已保存在 `web/public/assets/`，运行时不请求 TTS 图床。寿司 Go 中文模组的卡面源已返回 404，本站以 [另一份 TTS Sushi Go Party 模组](https://steamcommunity.com/sharedfiles/filedetails/?id=780801567) 的同种卡面补齐，牌名在网页显示为中文；来源记录位于 `web/public/assets/sushi-go/card-art-source.json`。
 
-六份 PDF 位于 `web/public/rules/`。花砖物语使用模组内的中文 PDF，花见小路使用[发行方的中文 PDF](https://tw.emperors4.com/game/hanamikoji)；另外四份将本站依据原版规则编写的中文游玩指南放在第一页，后附完整的英文原版规则。共享牌桌维护私有手牌、公开出牌、花砖工厂和个人图板、寿司同步选牌、翻转城市个人牌堆与供应堆，但特殊牌效果和费用仍需玩家依规则手动确认。
+六份 PDF 位于 `web/public/rules/`，均为完整中文重整版，不再附英文原版页面。情书按新版 21 张角色牌、从前从前按第三版、寿司 Go 按基础版 108 张牌编写；花砖物语在模组中文本基础上对照发行方规则修正纵向计分；花见小路依发行方繁体中文版重整为简体中文。规则书可由 `scripts/build_rules.py` 与 `scripts/rulebook_content.py` 重新生成。共享牌桌维护私有手牌、公开出牌、花砖工厂和个人图板、寿司同步选牌、翻转城市个人牌堆与供应堆，但特殊牌效果和费用仍需玩家依规则手动确认。
+
+规则校对来源：[情书](https://cdn.svc.asmodee.net/production-zman/uploads/2024/09/LL_Rulebook_with_Bag-1.pdf)、[寿司 Go](https://gamewright.com/pdfs/Rules/SushiGoTM-RULES.pdf)、[从前从前第三版](https://www.atlas-games.com/atlas-cms/resources/pdfs/ouat3rulesweb.pdf)、[花砖物语](https://cdn.svc.asmodee.net/production-unboxnowcom/uploads/2022/04/en-azul-rules.pdf)、[翻转城市](https://cs.uwaterloo.ca/~dtompkin/dtlib/base/Flip%20City.pdf)、[花见小路](https://tw.emperors4.com/game/hanamikoji)。
 
 ## 导入的 TTS 图包
 

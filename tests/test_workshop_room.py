@@ -38,6 +38,24 @@ def test_sushi_pick_is_secret_until_everyone_picks():
     assert len(r.state["hands"][first]) == 9
 
 
+def test_sushi_chopsticks_take_two_and_pass_on():
+    r = room("sushi-go")
+    first, second = (p.qq_id for p in r.players)
+    with pytest.raises(GameError):
+        r.action(first, {"type": "pick_two", "cards": r.state["hands"][first][:2]})
+    chopsticks = next(c for c in CATALOGS["sushi-go"][0] if r._card(c)["name"] == "筷子")
+    for zone in [r.state["deck"], *r.state["hands"].values()]:
+        if chopsticks in zone:
+            zone.remove(chopsticks)
+    r.state["table"][first].append(chopsticks)
+    choices = r.state["hands"][first][:2]
+    r.action(first, {"type": "pick_two", "cards": choices})
+    assert r.view()["players"][0]["table"] == []
+    r.action(second, {"type": "pick", "card_id": r.state["hands"][second][0]})
+    assert r.state["table"][first] == choices
+    assert chopsticks in r.state["hands"][second]
+
+
 def test_azul_factory_draft_and_pattern_line():
     r = room("azul")
     actor = r.players[0].qq_id
@@ -85,3 +103,10 @@ def test_love_letter_discard_is_public():
     card = r.state["hands"][actor][0]
     r.action(actor, {"type": "discard", "card_id": card})
     assert r.view()["discardCards"][0]["id"] == card
+
+
+def test_once_upon_a_time_third_edition_two_player_deal():
+    r = room("once-upon-a-time")
+    hand = r.state["hands"][r.players[0].qq_id]
+    assert sum(r._card(card)["group"] == "story" for card in hand) == 9
+    assert sum(r._card(card)["group"] == "ending" for card in hand) == 1

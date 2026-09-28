@@ -113,7 +113,7 @@ class WorkshopRoom:
                 for _ in range(3): deck.pop()
             for p in self.players: hands[p.qq_id].append(deck.pop())
         elif self.game == "once-upon-a-time":
-            n = {2: 10, 3: 8, 4: 7, 5: 6, 6: 5}[len(self.players)]
+            n = {2: 9, 3: 8, 4: 7, 5: 6, 6: 5}[len(self.players)]
             for p in self.players:
                 hands[p.qq_id] = [deck.pop() for _ in range(n)] + [ending_deck.pop()]
         elif self.game == "sushi-go":
@@ -170,17 +170,29 @@ class WorkshopRoom:
         card_id = str(action.get("card_id") or "")
         if kind in {"draw", "play", "discard", "pass", "turn", "tile"}:
             self._require_turn(player)
-        if kind == "pick" and self.game == "sushi-go":
+        if kind in {"pick", "pick_two"} and self.game == "sushi-go":
             if qq_id in self.state["chosen"]:
                 raise GameError("请等待其他玩家选牌。")
-            if card_id not in hands[qq_id]:
-                raise GameError("请选择自己手中的寿司牌。")
-            hands[qq_id].remove(card_id)
-            self.state["chosen"][qq_id] = card_id
-            self._record(f"{player.name} 已暗选一张牌。")
+            choices = [card_id] if kind == "pick" else list(action.get("cards") or [])
+            required = 1 if kind == "pick" else 2
+            if len(choices) != required or len(set(choices)) != required or any(c not in hands[qq_id] for c in choices):
+                raise GameError(f"请从手中选择 {required} 张不同的寿司牌。")
+            chopsticks = None
+            if kind == "pick_two":
+                chopsticks = next((c for c in table[qq_id] if self._card(c)["name"] == "筷子"), None)
+                if chopsticks is None:
+                    raise GameError("须在之前的回合先打出筷子，才能暗选两张。")
+            for choice in choices:
+                hands[qq_id].remove(choice)
+            if chopsticks is not None:
+                table[qq_id].remove(chopsticks)
+                hands[qq_id].append(chopsticks)
+            self.state["chosen"][qq_id] = choices
+            self._record(f"{player.name} 已暗选{required}张牌。")
             if len(self.state["chosen"]) == len(self.players):
                 for p in self.players:
-                    table[p.qq_id].append(self.state["chosen"][p.qq_id])
+                    selection = self.state["chosen"][p.qq_id]
+                    table[p.qq_id].extend(selection if isinstance(selection, list) else [selection])
                 rotated = [hands[p.qq_id] for p in self.players]
                 for index, p in enumerate(self.players):
                     hands[p.qq_id] = rotated[(index - 1) % len(self.players)]
