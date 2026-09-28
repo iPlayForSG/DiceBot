@@ -1,4 +1,4 @@
-"""Download four TTS workshop saves and materialize their image assets locally.
+"""Download TTS workshop saves and materialize their image assets locally.
 
 Workshop payloads are BSON. The normalized manifests keep object/card metadata
 for later rules work, while the website uses only files in web/public/assets.
@@ -25,13 +25,20 @@ GAMES = {
     "coup": ("2385450244", "政变（简中）带扩展"),
     "splendor": ("2093855539", "璀璨宝石（Splendor）"),
     "avalon": ("929329226", "阿瓦隆 脚本汉化版"),
+    "love-letter": ("2214094835", "情书 Love Letter 新版 （2~6人） 简中"),
+    "once-upon-a-time": ("753627805", "从前从前 Once upon a time 基础版+全 5 扩[繁體/從前從前]"),
+    "sushi-go": ("776875059", "寿司go！中文版"),
+    "azul": ("2954721315", "花砖物语（多语言脚本）"),
+    "flip-city": ("965115433", "filp city 翻转城市【CN】"),
+    "hanamikoji": ("2229350507", "花见小路(Hanamikoji)(中文/English)"),
 }
-IMAGE_KEYS = {"FaceURL", "BackURL", "ImageURL", "DiffuseURL", "NormalURL"}
+IMAGE_KEYS = {"FaceURL", "BackURL", "ImageURL", "ImageSecondaryURL", "DiffuseURL", "NormalURL"}
 
 
 def fetch(url: str) -> bytes:
     host = urlparse(url).hostname or ""
-    if host.endswith("steamusercontent.com") and "/ugc/" in url:
+    if host in {"cloud-3.steamusercontent.com", "cdn.steamusercontent.com",
+                "images.steamusercontent.com", "steamusercontent-a.akamaihd.net"} and "/ugc/" in url:
         url = "https://images.steamusercontent.com/ugc/" + url.split("/ugc/", 1)[1]
     elif host == "i.imgur.com":
         url = url.replace("http://", "https://", 1)
@@ -140,12 +147,12 @@ def crop_card_sheets(source: dict, out: Path, local: dict[str, str], originals: 
     decks = {}
     used: dict[str, set[int]] = {}
     for _, obj in objects(source):
-        for deck_id, spec in obj.get("CustomDeck", {}).items():
+        for deck_id, spec in (obj.get("CustomDeck") or {}).items():
             current = decks.get(deck_id)
             capacity = int(spec["NumWidth"]) * int(spec["NumHeight"])
             if current is None or capacity > int(current["NumWidth"]) * int(current["NumHeight"]):
                 decks[deck_id] = spec
-        ids = list(obj.get("DeckIDs", []))
+        ids = list(obj.get("DeckIDs") or [])
         if isinstance(obj.get("CardID"), int):
             ids.append(obj["CardID"])
         for card_id in ids:
@@ -205,8 +212,8 @@ def import_game(slug: str, out_root: Path) -> None:
             "image": decks.get(str(card_id // 100), {}).get("faces", [])[card_id % 100]
                 if isinstance(card_id, int) and str(card_id // 100) in decks
                 and card_id % 100 < len(decks[str(card_id // 100)]["faces"]) else None,
-            "deck_ids": obj.get("DeckIDs", []),
-            "custom_image": local.get(obj.get("CustomImage", {}).get("ImageURL", "")),
+            "deck_ids": obj.get("DeckIDs") or [],
+            "custom_image": local.get((obj.get("CustomImage") or {}).get("ImageURL", "")),
         })
     manifest = {
         "slug": slug,

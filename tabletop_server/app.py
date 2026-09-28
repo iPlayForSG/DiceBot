@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from tabletop_server.engine import GameError, GameRoom, Player
 from tabletop_server.party_games import NAMES, PartyRoom
+from tabletop_server.workshop_room import NAMES as WORKSHOP_NAMES, WorkshopRoom
 
 
 load_dotenv()
@@ -53,7 +54,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["Authorization", "Content-Type", "X-Tabletop-Admin"],
 )
-rooms: dict[str, GameRoom | PartyRoom] = {}
+rooms: dict[str, GameRoom | PartyRoom | WorkshopRoom] = {}
 connections: dict[str, dict[WebSocket, str]] = {}
 lock = asyncio.Lock()
 LOBBY_TTL_SECONDS = 5 * 60
@@ -75,7 +76,8 @@ def _restore() -> bool:
                     saved_player["token"] = None
                     migrated = True
         raw["players"] = [Player(**player) for player in raw["players"]]
-        room = PartyRoom(**raw) if raw.get("game") in NAMES else GameRoom(**raw)
+        room = (WorkshopRoom(**raw) if raw.get("game") in WORKSHOP_NAMES else
+                PartyRoom(**raw) if raw.get("game") in NAMES else GameRoom(**raw))
         rooms[room.code] = room
     return migrated
 
@@ -90,14 +92,14 @@ if _restore():
     _save()
 
 
-def _room(code: str) -> GameRoom | PartyRoom:
+def _room(code: str) -> GameRoom | PartyRoom | WorkshopRoom:
     room = rooms.get(code.upper())
     if room is None or (room.phase == "lobby" and room.created_at + LOBBY_TTL_SECONDS <= time.time()):
         raise HTTPException(404, "房间不存在或已取消，请在群里重新创建。")
     return room
 
 
-def _new_claim_code(room: GameRoom | PartyRoom) -> str:
+def _new_claim_code(room: GameRoom | PartyRoom | WorkshopRoom) -> str:
     existing = {player.claim_code for player in room.players}
     while True:
         code = "".join(secrets.choice(CLAIM_ALPHABET) for _ in range(10))
@@ -134,7 +136,7 @@ def _admin(value: str | None) -> None:
         raise HTTPException(403, "组局服务认证失败。")
 
 
-def _member(room: GameRoom | PartyRoom, authorization: str | None) -> Player:
+def _member(room: GameRoom | PartyRoom | WorkshopRoom, authorization: str | None) -> Player:
     token = (authorization or "").removeprefix("Bearer ")
     for player in room.players:
         if player.token and secrets.compare_digest(player.token, token):
@@ -157,7 +159,7 @@ def _avatar(qq_id: str, content: str | None) -> bool:
     return True
 
 
-async def _broadcast(room: GameRoom | PartyRoom) -> None:
+async def _broadcast(room: GameRoom | PartyRoom | WorkshopRoom) -> None:
     for websocket, token in list(connections.get(room.code, {}).items()):
         try:
             player = next((p for p in room.players if p.token and secrets.compare_digest(p.token, token)), None)
@@ -179,7 +181,8 @@ class BotPlayer(BaseModel):
 class CreateRoom(BaseModel):
     group_id: str
     player: BotPlayer
-    game: Literal["exploding-kittens", "cubirds", "coup", "splendor", "avalon"] = "exploding-kittens"
+    game: Literal["exploding-kittens", "cubirds", "coup", "splendor", "avalon",
+                  "love-letter", "once-upon-a-time", "sushi-go", "azul", "flip-city", "hanamikoji"] = "exploding-kittens"
     mode: str = Field(default="basic", max_length=24)
 
 
@@ -211,6 +214,7 @@ async def create_room(payload: CreateRoom, x_tabletop_admin: str | None = Header
         "exploding-kittens": {"basic", "advanced"}, "cubirds": {"basic"},
         "splendor": {"basic"}, "avalon": {"basic", "advanced"},
         "coup": {"basic", "reformation", "ks-bureaucrat", "ks-speculator"},
+        **{slug: {"basic"} for slug in WORKSHOP_NAMES},
     }
     if payload.mode not in allowed[payload.game]:
         raise HTTPException(400, "所选游戏模式无效。")
@@ -226,9 +230,11 @@ async def create_room(payload: CreateRoom, x_tabletop_admin: str | None = Header
         player.avatar = _avatar(player.qq_id, payload.player.avatar_base64)
         room = (GameRoom(code, payload.group_id, [player], mode=payload.mode)
                 if payload.game == "exploding-kittens" else
+                WorkshopRoom(code, payload.group_id, [player], payload.game, mode=payload.mode)
+                if payload.game in WORKSHOP_NAMES else
                 PartyRoom(code, payload.group_id, [player], payload.game, mode=payload.mode))
         player.claim_code = _new_claim_code(room)
-        room._record(f"{player.name} 创建了{NAMES.get(payload.game, '炸弹猫')}房间。")
+        room._record(f"{player.name} 创建了{NAMES.get(payload.game, WORKSHOP_NAMES.get(payload.game, '炸弹猫'))}房间。")
         rooms[code] = room
         _save()
     return {"code": code, "claim_code": player.claim_code}
@@ -365,7 +371,7 @@ async def act(code: str, payload: Action, authorization: str | None = Header(def
         room = _room(code)
         player = _member(room, authorization)
         try:
-            if isinstance(room, PartyRoom):
+            if isinstance(room, (PartyRoom, WorkshopRoom)):
                 room.action(player.qq_id, payload.model_dump(exclude_none=True))
             elif payload.type == "draw":
                 room.draw(player.qq_id)

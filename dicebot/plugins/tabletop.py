@@ -17,6 +17,13 @@ GAMES = {
     "政变": ("coup", "政变", "2–10"),
     "璀璨宝石": ("splendor", "璀璨宝石", "2–4"),
     "阿瓦隆": ("avalon", "阿瓦隆", "5–10"),
+    "情书": ("love-letter", "情书", "2–6"),
+    "从前从前": ("once-upon-a-time", "从前从前", "2–6"),
+    "寿司Go": ("sushi-go", "寿司 Go！", "2–5"),
+    "寿司go": ("sushi-go", "寿司 Go！", "2–5"),
+    "花砖物语": ("azul", "花砖物语", "2–4"),
+    "翻转城市": ("flip-city", "翻转城市", "2–4"),
+    "花见小路": ("hanamikoji", "花见小路", "2"),
 }
 GAME_NAMES = {game: name for game, name, _ in GAMES.values()}
 GAME_LIMITS = {game: limit for game, _, limit in GAMES.values()}
@@ -45,10 +52,10 @@ async def handle_tabletop(bot: Bot, event: MessageEvent, args: Message = Command
         if command in {"帮助", "help"}:
             reply = HELP
         elif command == "列表":
-            reply = "当前可玩：炸弹猫（2–5 人）、方·鸟（2–5 人）、政变（2–10 人）、璀璨宝石（2–4 人）、阿瓦隆（5–10 人）。\n发送 /桌游 创建 <游戏名>。"
+            reply = "当前可玩：炸弹猫、方·鸟、政变、璀璨宝石、阿瓦隆、情书、从前从前、寿司Go、花砖物语、翻转城市、花见小路。\n发送 /桌游 创建 <游戏名>。新游戏为按规则书手动结算的共享牌桌。"
         elif command == "创建":
             if len(parts) < 2 or parts[1] not in GAMES:
-                reply = "用法：/桌游 创建 炸弹猫｜方·鸟｜政变｜璀璨宝石｜阿瓦隆"
+                reply = "用法：/桌游 创建 <游戏名>；发送 /桌游 列表 查看可玩游戏。"
             else:
                 game, game_name, limit = GAMES[parts[1]]
                 variant = parts[2] if len(parts) > 2 else ""

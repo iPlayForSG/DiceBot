@@ -1,0 +1,5 @@
+{
+  "base_game_save": "https://steamcommunity.com/sharedfiles/filedetails/?id=776875059",
+  "replacement_art_save": "https://steamcommunity.com/sharedfiles/filedetails/?id=780801567",
+  "reason": "The base game's Chinese face sheet now returns HTTP 404; images are hosted locally and labeled in Chinese in the site."
+}

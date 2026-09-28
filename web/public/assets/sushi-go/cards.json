@@ -1,0 +1,650 @@
+[
+  {
+    "id": "s0",
+    "name": "天妇罗",
+    "image": "public/assets/sushi-go/cards/deck-1-31.webp",
+    "group": "story"
+  },
+  {
+    "id": "s1",
+    "name": "天妇罗",
+    "image": "public/assets/sushi-go/cards/deck-1-31.webp",
+    "group": "story"
+  },
+  {
+    "id": "s2",
+    "name": "天妇罗",
+    "image": "public/assets/sushi-go/cards/deck-1-31.webp",
+    "group": "story"
+  },
+  {
+    "id": "s3",
+    "name": "天妇罗",
+    "image": "public/assets/sushi-go/cards/deck-1-31.webp",
+    "group": "story"
+  },
+  {
+    "id": "s4",
+    "name": "天妇罗",
+    "image": "public/assets/sushi-go/cards/deck-1-31.webp",
+    "group": "story"
+  },
+  {
+    "id": "s5",
+    "name": "天妇罗",
+    "image": "public/assets/sushi-go/cards/deck-1-31.webp",
+    "group": "story"
+  },
+  {
+    "id": "s6",
+    "name": "天妇罗",
+    "image": "public/assets/sushi-go/cards/deck-1-31.webp",
+    "group": "story"
+  },
+  {
+    "id": "s7",
+    "name": "天妇罗",
+    "image": "public/assets/sushi-go/cards/deck-1-31.webp",
+    "group": "story"
+  },
+  {
+    "id": "s8",
+    "name": "天妇罗",
+    "image": "public/assets/sushi-go/cards/deck-1-31.webp",
+    "group": "story"
+  },
+  {
+    "id": "s9",
+    "name": "天妇罗",
+    "image": "public/assets/sushi-go/cards/deck-1-31.webp",
+    "group": "story"
+  },
+  {
+    "id": "s10",
+    "name": "天妇罗",
+    "image": "public/assets/sushi-go/cards/deck-1-31.webp",
+    "group": "story"
+  },
+  {
+    "id": "s11",
+    "name": "天妇罗",
+    "image": "public/assets/sushi-go/cards/deck-1-31.webp",
+    "group": "story"
+  },
+  {
+    "id": "s12",
+    "name": "天妇罗",
+    "image": "public/assets/sushi-go/cards/deck-1-31.webp",
+    "group": "story"
+  },
+  {
+    "id": "s13",
+    "name": "天妇罗",
+    "image": "public/assets/sushi-go/cards/deck-1-31.webp",
+    "group": "story"
+  },
+  {
+    "id": "s14",
+    "name": "生鱼片",
+    "image": "public/assets/sushi-go/cards/deck-1-23.webp",
+    "group": "story"
+  },
+  {
+    "id": "s15",
+    "name": "生鱼片",
+    "image": "public/assets/sushi-go/cards/deck-1-23.webp",
+    "group": "story"
+  },
+  {
+    "id": "s16",
+    "name": "生鱼片",
+    "image": "public/assets/sushi-go/cards/deck-1-23.webp",
+    "group": "story"
+  },
+  {
+    "id": "s17",
+    "name": "生鱼片",
+    "image": "public/assets/sushi-go/cards/deck-1-23.webp",
+    "group": "story"
+  },
+  {
+    "id": "s18",
+    "name": "生鱼片",
+    "image": "public/assets/sushi-go/cards/deck-1-23.webp",
+    "group": "story"
+  },
+  {
+    "id": "s19",
+    "name": "生鱼片",
+    "image": "public/assets/sushi-go/cards/deck-1-23.webp",
+    "group": "story"
+  },
+  {
+    "id": "s20",
+    "name": "生鱼片",
+    "image": "public/assets/sushi-go/cards/deck-1-23.webp",
+    "group": "story"
+  },
+  {
+    "id": "s21",
+    "name": "生鱼片",
+    "image": "public/assets/sushi-go/cards/deck-1-23.webp",
+    "group": "story"
+  },
+  {
+    "id": "s22",
+    "name": "生鱼片",
+    "image": "public/assets/sushi-go/cards/deck-1-23.webp",
+    "group": "story"
+  },
+  {
+    "id": "s23",
+    "name": "生鱼片",
+    "image": "public/assets/sushi-go/cards/deck-1-23.webp",
+    "group": "story"
+  },
+  {
+    "id": "s24",
+    "name": "生鱼片",
+    "image": "public/assets/sushi-go/cards/deck-1-23.webp",
+    "group": "story"
+  },
+  {
+    "id": "s25",
+    "name": "生鱼片",
+    "image": "public/assets/sushi-go/cards/deck-1-23.webp",
+    "group": "story"
+  },
+  {
+    "id": "s26",
+    "name": "生鱼片",
+    "image": "public/assets/sushi-go/cards/deck-1-23.webp",
+    "group": "story"
+  },
+  {
+    "id": "s27",
+    "name": "生鱼片",
+    "image": "public/assets/sushi-go/cards/deck-1-23.webp",
+    "group": "story"
+  },
+  {
+    "id": "s28",
+    "name": "饺子",
+    "image": "public/assets/sushi-go/cards/deck-1-01.webp",
+    "group": "story"
+  },
+  {
+    "id": "s29",
+    "name": "饺子",
+    "image": "public/assets/sushi-go/cards/deck-1-01.webp",
+    "group": "story"
+  },
+  {
+    "id": "s30",
+    "name": "饺子",
+    "image": "public/assets/sushi-go/cards/deck-1-01.webp",
+    "group": "story"
+  },
+  {
+    "id": "s31",
+    "name": "饺子",
+    "image": "public/assets/sushi-go/cards/deck-1-01.webp",
+    "group": "story"
+  },
+  {
+    "id": "s32",
+    "name": "饺子",
+    "image": "public/assets/sushi-go/cards/deck-1-01.webp",
+    "group": "story"
+  },
+  {
+    "id": "s33",
+    "name": "饺子",
+    "image": "public/assets/sushi-go/cards/deck-1-01.webp",
+    "group": "story"
+  },
+  {
+    "id": "s34",
+    "name": "饺子",
+    "image": "public/assets/sushi-go/cards/deck-1-01.webp",
+    "group": "story"
+  },
+  {
+    "id": "s35",
+    "name": "饺子",
+    "image": "public/assets/sushi-go/cards/deck-1-01.webp",
+    "group": "story"
+  },
+  {
+    "id": "s36",
+    "name": "饺子",
+    "image": "public/assets/sushi-go/cards/deck-1-01.webp",
+    "group": "story"
+  },
+  {
+    "id": "s37",
+    "name": "饺子",
+    "image": "public/assets/sushi-go/cards/deck-1-01.webp",
+    "group": "story"
+  },
+  {
+    "id": "s38",
+    "name": "饺子",
+    "image": "public/assets/sushi-go/cards/deck-1-01.webp",
+    "group": "story"
+  },
+  {
+    "id": "s39",
+    "name": "饺子",
+    "image": "public/assets/sushi-go/cards/deck-1-01.webp",
+    "group": "story"
+  },
+  {
+    "id": "s40",
+    "name": "饺子",
+    "image": "public/assets/sushi-go/cards/deck-1-01.webp",
+    "group": "story"
+  },
+  {
+    "id": "s41",
+    "name": "饺子",
+    "image": "public/assets/sushi-go/cards/deck-1-01.webp",
+    "group": "story"
+  },
+  {
+    "id": "s42",
+    "name": "寿司卷 2",
+    "image": "public/assets/sushi-go/cards/deck-1-13.webp",
+    "group": "story"
+  },
+  {
+    "id": "s43",
+    "name": "寿司卷 2",
+    "image": "public/assets/sushi-go/cards/deck-1-13.webp",
+    "group": "story"
+  },
+  {
+    "id": "s44",
+    "name": "寿司卷 2",
+    "image": "public/assets/sushi-go/cards/deck-1-13.webp",
+    "group": "story"
+  },
+  {
+    "id": "s45",
+    "name": "寿司卷 2",
+    "image": "public/assets/sushi-go/cards/deck-1-13.webp",
+    "group": "story"
+  },
+  {
+    "id": "s46",
+    "name": "寿司卷 2",
+    "image": "public/assets/sushi-go/cards/deck-1-13.webp",
+    "group": "story"
+  },
+  {
+    "id": "s47",
+    "name": "寿司卷 2",
+    "image": "public/assets/sushi-go/cards/deck-1-13.webp",
+    "group": "story"
+  },
+  {
+    "id": "s48",
+    "name": "寿司卷 2",
+    "image": "public/assets/sushi-go/cards/deck-1-13.webp",
+    "group": "story"
+  },
+  {
+    "id": "s49",
+    "name": "寿司卷 2",
+    "image": "public/assets/sushi-go/cards/deck-1-13.webp",
+    "group": "story"
+  },
+  {
+    "id": "s50",
+    "name": "寿司卷 2",
+    "image": "public/assets/sushi-go/cards/deck-1-13.webp",
+    "group": "story"
+  },
+  {
+    "id": "s51",
+    "name": "寿司卷 2",
+    "image": "public/assets/sushi-go/cards/deck-1-13.webp",
+    "group": "story"
+  },
+  {
+    "id": "s52",
+    "name": "寿司卷 2",
+    "image": "public/assets/sushi-go/cards/deck-1-13.webp",
+    "group": "story"
+  },
+  {
+    "id": "s53",
+    "name": "寿司卷 2",
+    "image": "public/assets/sushi-go/cards/deck-1-13.webp",
+    "group": "story"
+  },
+  {
+    "id": "s54",
+    "name": "寿司卷 3",
+    "image": "public/assets/sushi-go/cards/deck-1-14.webp",
+    "group": "story"
+  },
+  {
+    "id": "s55",
+    "name": "寿司卷 3",
+    "image": "public/assets/sushi-go/cards/deck-1-14.webp",
+    "group": "story"
+  },
+  {
+    "id": "s56",
+    "name": "寿司卷 3",
+    "image": "public/assets/sushi-go/cards/deck-1-14.webp",
+    "group": "story"
+  },
+  {
+    "id": "s57",
+    "name": "寿司卷 3",
+    "image": "public/assets/sushi-go/cards/deck-1-14.webp",
+    "group": "story"
+  },
+  {
+    "id": "s58",
+    "name": "寿司卷 3",
+    "image": "public/assets/sushi-go/cards/deck-1-14.webp",
+    "group": "story"
+  },
+  {
+    "id": "s59",
+    "name": "寿司卷 3",
+    "image": "public/assets/sushi-go/cards/deck-1-14.webp",
+    "group": "story"
+  },
+  {
+    "id": "s60",
+    "name": "寿司卷 3",
+    "image": "public/assets/sushi-go/cards/deck-1-14.webp",
+    "group": "story"
+  },
+  {
+    "id": "s61",
+    "name": "寿司卷 3",
+    "image": "public/assets/sushi-go/cards/deck-1-14.webp",
+    "group": "story"
+  },
+  {
+    "id": "s62",
+    "name": "寿司卷 1",
+    "image": "public/assets/sushi-go/cards/deck-1-12.webp",
+    "group": "story"
+  },
+  {
+    "id": "s63",
+    "name": "寿司卷 1",
+    "image": "public/assets/sushi-go/cards/deck-1-12.webp",
+    "group": "story"
+  },
+  {
+    "id": "s64",
+    "name": "寿司卷 1",
+    "image": "public/assets/sushi-go/cards/deck-1-12.webp",
+    "group": "story"
+  },
+  {
+    "id": "s65",
+    "name": "寿司卷 1",
+    "image": "public/assets/sushi-go/cards/deck-1-12.webp",
+    "group": "story"
+  },
+  {
+    "id": "s66",
+    "name": "寿司卷 1",
+    "image": "public/assets/sushi-go/cards/deck-1-12.webp",
+    "group": "story"
+  },
+  {
+    "id": "s67",
+    "name": "寿司卷 1",
+    "image": "public/assets/sushi-go/cards/deck-1-12.webp",
+    "group": "story"
+  },
+  {
+    "id": "s68",
+    "name": "鲑鱼握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-22.webp",
+    "group": "story"
+  },
+  {
+    "id": "s69",
+    "name": "鲑鱼握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-22.webp",
+    "group": "story"
+  },
+  {
+    "id": "s70",
+    "name": "鲑鱼握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-22.webp",
+    "group": "story"
+  },
+  {
+    "id": "s71",
+    "name": "鲑鱼握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-22.webp",
+    "group": "story"
+  },
+  {
+    "id": "s72",
+    "name": "鲑鱼握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-22.webp",
+    "group": "story"
+  },
+  {
+    "id": "s73",
+    "name": "鲑鱼握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-22.webp",
+    "group": "story"
+  },
+  {
+    "id": "s74",
+    "name": "鲑鱼握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-22.webp",
+    "group": "story"
+  },
+  {
+    "id": "s75",
+    "name": "鲑鱼握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-22.webp",
+    "group": "story"
+  },
+  {
+    "id": "s76",
+    "name": "鲑鱼握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-22.webp",
+    "group": "story"
+  },
+  {
+    "id": "s77",
+    "name": "鲑鱼握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-22.webp",
+    "group": "story"
+  },
+  {
+    "id": "s78",
+    "name": "鱿鱼握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-27.webp",
+    "group": "story"
+  },
+  {
+    "id": "s79",
+    "name": "鱿鱼握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-27.webp",
+    "group": "story"
+  },
+  {
+    "id": "s80",
+    "name": "鱿鱼握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-27.webp",
+    "group": "story"
+  },
+  {
+    "id": "s81",
+    "name": "鱿鱼握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-27.webp",
+    "group": "story"
+  },
+  {
+    "id": "s82",
+    "name": "鱿鱼握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-27.webp",
+    "group": "story"
+  },
+  {
+    "id": "s83",
+    "name": "鸡蛋握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-04.webp",
+    "group": "story"
+  },
+  {
+    "id": "s84",
+    "name": "鸡蛋握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-04.webp",
+    "group": "story"
+  },
+  {
+    "id": "s85",
+    "name": "鸡蛋握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-04.webp",
+    "group": "story"
+  },
+  {
+    "id": "s86",
+    "name": "鸡蛋握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-04.webp",
+    "group": "story"
+  },
+  {
+    "id": "s87",
+    "name": "鸡蛋握寿司",
+    "image": "public/assets/sushi-go/cards/deck-1-04.webp",
+    "group": "story"
+  },
+  {
+    "id": "s88",
+    "name": "布丁",
+    "image": "public/assets/sushi-go/cards/deck-1-21.webp",
+    "group": "story"
+  },
+  {
+    "id": "s89",
+    "name": "布丁",
+    "image": "public/assets/sushi-go/cards/deck-1-21.webp",
+    "group": "story"
+  },
+  {
+    "id": "s90",
+    "name": "布丁",
+    "image": "public/assets/sushi-go/cards/deck-1-21.webp",
+    "group": "story"
+  },
+  {
+    "id": "s91",
+    "name": "布丁",
+    "image": "public/assets/sushi-go/cards/deck-1-21.webp",
+    "group": "story"
+  },
+  {
+    "id": "s92",
+    "name": "布丁",
+    "image": "public/assets/sushi-go/cards/deck-1-21.webp",
+    "group": "story"
+  },
+  {
+    "id": "s93",
+    "name": "布丁",
+    "image": "public/assets/sushi-go/cards/deck-1-21.webp",
+    "group": "story"
+  },
+  {
+    "id": "s94",
+    "name": "布丁",
+    "image": "public/assets/sushi-go/cards/deck-1-21.webp",
+    "group": "story"
+  },
+  {
+    "id": "s95",
+    "name": "布丁",
+    "image": "public/assets/sushi-go/cards/deck-1-21.webp",
+    "group": "story"
+  },
+  {
+    "id": "s96",
+    "name": "布丁",
+    "image": "public/assets/sushi-go/cards/deck-1-21.webp",
+    "group": "story"
+  },
+  {
+    "id": "s97",
+    "name": "布丁",
+    "image": "public/assets/sushi-go/cards/deck-1-21.webp",
+    "group": "story"
+  },
+  {
+    "id": "s98",
+    "name": "芥末",
+    "image": "public/assets/sushi-go/cards/deck-1-36.webp",
+    "group": "story"
+  },
+  {
+    "id": "s99",
+    "name": "芥末",
+    "image": "public/assets/sushi-go/cards/deck-1-36.webp",
+    "group": "story"
+  },
+  {
+    "id": "s100",
+    "name": "芥末",
+    "image": "public/assets/sushi-go/cards/deck-1-36.webp",
+    "group": "story"
+  },
+  {
+    "id": "s101",
+    "name": "芥末",
+    "image": "public/assets/sushi-go/cards/deck-1-36.webp",
+    "group": "story"
+  },
+  {
+    "id": "s102",
+    "name": "芥末",
+    "image": "public/assets/sushi-go/cards/deck-1-36.webp",
+    "group": "story"
+  },
+  {
+    "id": "s103",
+    "name": "芥末",
+    "image": "public/assets/sushi-go/cards/deck-1-36.webp",
+    "group": "story"
+  },
+  {
+    "id": "s104",
+    "name": "筷子",
+    "image": "public/assets/sushi-go/cards/deck-1-00.webp",
+    "group": "story"
+  },
+  {
+    "id": "s105",
+    "name": "筷子",
+    "image": "public/assets/sushi-go/cards/deck-1-00.webp",
+    "group": "story"
+  },
+  {
+    "id": "s106",
+    "name": "筷子",
+    "image": "public/assets/sushi-go/cards/deck-1-00.webp",
+    "group": "story"
+  },
+  {
+    "id": "s107",
+    "name": "筷子",
+    "image": "public/assets/sushi-go/cards/deck-1-00.webp",
+    "group": "story"
+  }
+]

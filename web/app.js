@@ -278,6 +278,11 @@ $("secondary-action").addEventListener("click", () => {
   if (!code) {$("landing").hidden = false; return;}
   try {
     const preview = await request(`/api/rooms/${code}`);
+    if (["love-letter","once-upon-a-time","sushi-go","azul","flip-city","hanamikoji"].includes(preview.game)) {
+      $("workshop").hidden = false;
+      window.startWorkshopRoom({api: API, code, initial: preview, notify});
+      return;
+    }
     if (preview.game && preview.game !== "exploding-kittens") {
       $("party").hidden = false;
       await window.startPartyRoom({api: API, code, initial: preview, notify});
@@ -290,6 +295,7 @@ $("secondary-action").addEventListener("click", () => {
   } catch (error) {
     $("game").hidden = true;
     $("party").hidden = true;
+    $("workshop").hidden = true;
     $("landing").hidden = false;
     $("room-input").value = code;
     notify(error.message || "房间加载失败，请检查房间号后重试。");

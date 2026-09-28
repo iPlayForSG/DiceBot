@@ -10,9 +10,11 @@
   <link rel="stylesheet" href="./style.css?build=local">
   <link rel="stylesheet" href="./home.css?build=local">
   <link rel="stylesheet" href="./party.css?build=local">
+  <link rel="stylesheet" href="./workshop.css?build=local">
   <script src="./config.js?build=local" defer></script>
   <script src="./app.js?build=local" defer></script>
   <script src="./party.js?build=local" defer></script>
+  <script src="./workshop.js?build=local" defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -37,7 +39,7 @@
       <div class="art-die"><span></span><span></span><span></span><span></span><span></span></div>
     </div>
     <section id="games" class="game-catalogue" aria-labelledby="games-title">
-      <div class="catalogue-heading"><div><span class="eyebrow">游戏库</span><h2 id="games-title">今晚玩什么？</h2></div><p>目前开放 5 款桌游；后续游戏会继续加入这里。</p></div>
+      <div class="catalogue-heading"><div><span class="eyebrow">游戏库</span><h2 id="games-title">今晚玩什么？</h2></div><p>已收录 11 款桌游；新加入的作品附有 PDF 规则书，并使用共享牌桌手动结算。</p></div>
       <article class="game-entry">
         <div class="game-art"><img src="./public/assets/exploding-kittens/card-back.jpg" alt="炸弹猫牌背"></div>
         <div class="game-entry-copy"><div class="game-entry-top"><span class="available-tag">已开放</span><span>2–5 人 · 卡牌</span></div><h3>炸弹猫</h3><p>轮流出牌与抽牌，靠拆弹和反制留在牌局里。支持基础版与进阶组合。</p><div class="game-command"><code>/桌游 创建 炸弹猫</code><button id="copy-command" type="button">复制组局命令</button></div></div>
@@ -46,10 +48,17 @@
       <article class="game-entry"><div class="game-art"><img src="./public/assets/coup/cards/deck-3-00.webp" alt="政变角色卡"></div><div class="game-entry-copy"><div class="game-entry-top"><span class="available-tag">已开放</span><span>2–10 人 · 虚张声势</span></div><h3>政变</h3><p>「扩展」加入阵营与判官；「KS」可改用官僚与弄臣。</p><div class="game-command"><code>/桌游 创建 政变 扩展</code><button type="button" data-copy-command="/桌游 创建 政变 扩展">复制扩展命令</button><code>/桌游 创建 政变 KS</code><button type="button" data-copy-command="/桌游 创建 政变 KS">复制 KS 命令</button></div></div></article>
       <article class="game-entry"><div class="game-art"><img src="./public/assets/splendor/cards/deck-5-15.webp" alt="璀璨宝石发展卡"></div><div class="game-entry-copy"><div class="game-entry-top"><span class="available-tag">已开放</span><span>2–4 人 · 资源经营</span></div><h3>璀璨宝石</h3><p>领取宝石、购买发展卡，吸引贵族并争取 15 分。</p><div class="game-command"><code>/桌游 创建 璀璨宝石</code><button type="button" data-copy-command="/桌游 创建 璀璨宝石">复制组局命令</button></div></div></article>
       <article class="game-entry"><div class="game-art"><img src="./public/assets/avalon/cards/deck-3-09.webp" alt="阿瓦隆身份牌"></div><div class="game-entry-copy"><div class="game-entry-top"><span class="available-tag">已开放</span><span>5–10 人 · 隐藏身份</span></div><h3>阿瓦隆</h3><p>秘密身份、队伍表决与任务投票。进阶模式加入特殊角色。</p><div class="game-command"><code>/桌游 创建 阿瓦隆 进阶</code><button type="button" data-copy-command="/桌游 创建 阿瓦隆 进阶">复制组局命令</button></div></div></article>
+      <article class="game-entry"><div class="game-art"><img src="./public/assets/love-letter/cards/deck-5-00.webp" alt="情书卡牌"></div><div class="game-entry-copy"><div class="game-entry-top"><span class="available-tag">共享牌桌</span><span>2–6 人 · 卡牌推理</span></div><h3>情书</h3><p>中文卡面，抽一张、打一张，争取每轮留下最高价值的手牌。</p><p><a href="./public/rules/love-letter.pdf" target="_blank" rel="noopener">PDF 规则书 ↗</a></p><div class="game-command"><code>/桌游 创建 情书</code><button type="button" data-copy-command="/桌游 创建 情书">复制组局命令</button></div></div></article>
+      <article class="game-entry"><div class="game-art"><img src="./public/assets/once-upon-a-time/cards/deck-8-00.webp" alt="从前从前故事牌"></div><div class="game-entry-copy"><div class="game-entry-top"><span class="available-tag">共享牌桌</span><span>2–6 人 · 故事接龙</span></div><h3>从前从前</h3><p>基础牌与扩展牌组，让故事里的角色、地点和结局从玩家手中出现。</p><p><a href="./public/rules/once-upon-a-time.pdf" target="_blank" rel="noopener">PDF 规则书 ↗</a></p><div class="game-command"><code>/桌游 创建 从前从前</code><button type="button" data-copy-command="/桌游 创建 从前从前">复制组局命令</button></div></div></article>
+      <article class="game-entry"><div class="game-art"><img src="./public/assets/sushi-go/images/a8f0af453d96b882.webp" alt="寿司 Go 桌游图包"></div><div class="game-entry-copy"><div class="game-entry-top"><span class="available-tag">共享牌桌</span><span>2–5 人 · 同步选牌</span></div><h3>寿司 Go！</h3><p>同时选牌、传递手牌，三轮收集寿司组合并计分。</p><p><a href="./public/rules/sushi-go.pdf" target="_blank" rel="noopener">PDF 规则书 ↗</a></p><div class="game-command"><code>/桌游 创建 寿司Go</code><button type="button" data-copy-command="/桌游 创建 寿司Go">复制组局命令</button></div></div></article>
+      <article class="game-entry"><div class="game-art"><img src="./public/assets/azul/images/079cdd98d24ae3b8.webp" alt="花砖物语图包"></div><div class="game-entry-copy"><div class="game-entry-top"><span class="available-tag">共享牌桌</span><span>2–4 人 · 花砖拼放</span></div><h3>花砖物语</h3><p>从工厂与中央拿取花砖，对照中文规则书在图板上排布与计分。</p><p><a href="./public/rules/azul.pdf" target="_blank" rel="noopener">PDF 规则书 ↗</a></p><div class="game-command"><code>/桌游 创建 花砖物语</code><button type="button" data-copy-command="/桌游 创建 花砖物语">复制组局命令</button></div></div></article>
+      <article class="game-entry"><div class="game-art"><img src="./public/assets/flip-city/cards/deck-1-00.webp" alt="翻转城市卡牌"></div><div class="game-entry-copy"><div class="game-entry-top"><span class="available-tag">共享牌桌</span><span>2–4 人 · 构筑牌组</span></div><h3>翻转城市</h3><p>继续翻牌还是停手？控制不满值，在一回合取得足够分数。</p><p><a href="./public/rules/flip-city.pdf" target="_blank" rel="noopener">PDF 规则书 ↗</a></p><div class="game-command"><code>/桌游 创建 翻转城市</code><button type="button" data-copy-command="/桌游 创建 翻转城市">复制组局命令</button></div></div></article>
+      <article class="game-entry"><div class="game-art"><img src="./public/assets/hanamikoji/cards/deck-1-00.webp" alt="花见小路物品卡"></div><div class="game-entry-copy"><div class="game-entry-top"><span class="available-tag">共享牌桌</span><span>2 人 · 献礼争夺</span></div><h3>花见小路</h3><p>挑选礼物、争取艺伎支持；规则书采用发行方提供的中文 PDF。</p><p><a href="./public/rules/hanamikoji.pdf" target="_blank" rel="noopener">PDF 规则书 ↗</a></p><div class="game-command"><code>/桌游 创建 花见小路</code><button type="button" data-copy-command="/桌游 创建 花见小路">复制组局命令</button></div></div></article>
     </section>
   </main>
 
   <main id="party" class="party-layout" hidden aria-label="桌游牌桌"></main>
+  <main id="workshop" hidden aria-label="创意工坊共享牌桌"></main>
 
   <main id="game" class="game-layout" hidden>
     <aside class="left-rail">

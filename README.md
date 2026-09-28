@@ -2,7 +2,7 @@
 
 QQ Bot 在群里登记玩家、缓存 QQ 头像并发送链接，再私聊每位玩家的身份码；玩家在网页输入身份码，随后在浏览器里玩牌。第一个桌游是 [TTS 创意工坊《炸弹猫（个人精翻版）》](https://steamcommunity.com/sharedfiles/filedetails/?id=2375784308) 的基础版牌组。
 
-网站首页是通用桌游大厅，展示房间入口与已开放游戏。目前支持炸弹猫、方·鸟、政变、璀璨宝石、阿瓦隆五款游戏。服务端按游戏类型创建房间，私密手牌和身份只返回给已认领座位的本人。
+网站首页是通用桌游大厅，展示房间入口与已开放游戏。目前收录炸弹猫、方·鸟、政变、璀璨宝石、阿瓦隆、情书、从前从前、寿司 Go、花砖物语、翻转城市、花见小路，共十一款游戏。服务端按游戏类型创建房间，私密手牌和身份只返回给已认领座位的本人。后六款使用共享牌桌，由玩家依 PDF 规则书手动结算牌面效果和分数。
 
 ## 组成
 
@@ -48,6 +48,12 @@ uv run python bot.py
 /桌游 创建 璀璨宝石
 /桌游 创建 阿瓦隆
 /桌游 创建 阿瓦隆 进阶
+/桌游 创建 情书
+/桌游 创建 从前从前
+/桌游 创建 寿司Go
+/桌游 创建 花砖物语
+/桌游 创建 翻转城市
+/桌游 创建 花见小路
 /桌游 加入 <房间码>
 /桌游 状态
 /桌游 开始
@@ -64,6 +70,10 @@ uv run python bot.py
 方·鸟按鸟种摆牌、夹取、补牌、收鸟群和新一轮发牌。璀璨宝石自动维护三层发展卡、宝石供应、折扣、贵族与计分。阿瓦隆自动分配身份、提供各角色的私密情报，并收集组队票与任务牌。政变保留社交诈称：玩家在 QQ 群讨论质疑和阻挡，再在网页确认亮牌、失去影响与结算；扩展模式加入判官和阵营。KS 模式可选官僚或投机者并加入弄臣，使用模组的替换角色图包。
 
 四个新模组的图片和存档来自 [方·鸟](https://steamcommunity.com/sharedfiles/filedetails/?id=2299292104)、[政变](https://steamcommunity.com/sharedfiles/filedetails/?id=2385450244)、[璀璨宝石](https://steamcommunity.com/sharedfiles/filedetails/?id=2093855539)、[阿瓦隆](https://steamcommunity.com/sharedfiles/filedetails/?id=929329226)。`scripts/import_workshop_games.py` 将工坊 BSON 存档解码，把图集下载到本机缓存，并在 `web/public/assets/` 生成压缩图片和清单。网页运行时只读取本站图片，不调用 TTS 或 Steam 图床。
+
+第二批模组来自 [情书](https://steamcommunity.com/sharedfiles/filedetails/?id=2214094835)、[从前从前](https://steamcommunity.com/sharedfiles/filedetails/?id=753627805)、[寿司 Go 中文版](https://steamcommunity.com/sharedfiles/filedetails/?id=776875059)、[花砖物语](https://steamcommunity.com/sharedfiles/filedetails/?id=2954721315)、[翻转城市](https://steamcommunity.com/sharedfiles/filedetails/?id=965115433)、[花见小路](https://steamcommunity.com/sharedfiles/filedetails/?id=2229350507)。图片已保存在 `web/public/assets/`，运行时不请求 TTS 图床。寿司 Go 中文模组的卡面源已返回 404，本站以 [另一份 TTS Sushi Go Party 模组](https://steamcommunity.com/sharedfiles/filedetails/?id=780801567) 的同种卡面补齐，牌名在网页显示为中文；来源记录位于 `web/public/assets/sushi-go/card-art-source.json`。
+
+六份 PDF 位于 `web/public/rules/`。花砖物语使用模组内的中文 PDF，花见小路使用[发行方的中文 PDF](https://tw.emperors4.com/game/hanamikoji)；另外四份是本站依据原版规则重新编写的中文游玩指南，文末附原版完整规则链接。共享牌桌维护私有手牌、公开出牌、花砖工厂和个人图板、寿司同步选牌、翻转城市个人牌堆与供应堆，但特殊牌效果和费用仍需玩家依规则手动确认。
 
 ## 导入的 TTS 图包
 
