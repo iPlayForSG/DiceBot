@@ -10,6 +10,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from pypdf import PdfWriter
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -62,6 +63,18 @@ make("flip-city", "翻转城市 Flip City｜中文游玩指南", "1–4 人｜�
     ("出牌阶段", ["从自己的牌组顶逐张翻牌并立即结算，可随时选择停止。牌组耗尽时洗混弃牌堆组成新牌组。打出的牌给出临时金钱、胜利分及不满值，牌面特殊效果优先执行。", "若本回合已打出的卡累计达到 3 点不满值，立即爆牌：本回合提前结束，打出的牌移到弃牌堆。可回收的弃牌可依牌面能力翻面并取得临时效果；具体费用和限制见牌面。"]),
     ("建造阶段与回合结束", ["保有的临时金钱可用于一次建造行动：购买公共供应卡放入自己的弃牌堆；支付翻转费用，把自己弃牌堆中的卡翻到另一面；或支付购买价加翻转费用，直接取得翻面后的公共卡。", "已打出的牌此时仍不属于弃牌堆。建造结束后检查胜利条件，再把本回合打出的牌放入弃牌堆。临时金钱、胜利分和不满值均不带到下个回合。"]),
 ], "https://cs.uwaterloo.ca/~dtompkin/dtlib/base/Flip%20City.pdf")
+
+for slug in ("love-letter", "sushi-go", "once-upon-a-time", "flip-city"):
+    guide = OUT / f"{slug}.pdf"
+    original = ROOT / "data/rules-sources" / f"{slug}-en.pdf"
+    writer = PdfWriter()
+    writer.append(str(guide))
+    writer.append(str(original))
+    combined = OUT / f"{slug}.combined.pdf"
+    with combined.open("wb") as stream:
+        writer.write(stream)
+    combined.replace(guide)
+    print("with original rulebook", guide, guide.stat().st_size)
 
 for slug in ("azul", "hanamikoji"):
     source = ROOT / "data/rules-sources" / f"{slug}.pdf"
