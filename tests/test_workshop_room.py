@@ -1,7 +1,7 @@
 import pytest
 
 from tabletop_server.engine import GameError, Player
-from tabletop_server.workshop_room import WorkshopRoom, NAMES, LIMITS
+from tabletop_server.workshop_room import WorkshopRoom, NAMES, LIMITS, CATALOGS
 
 
 def room(game, count=2):
@@ -49,6 +49,7 @@ def test_azul_factory_draft_and_pattern_line():
     r.action(actor, {"type": "place_tile", "color": color, "row": 0})
     r.action(actor, {"type": "resolve_pattern", "row": 0})
     assert r.state["wall"][actor] == [color]
+    assert r.view()["players"][0]["wall"] == [color]
 
 
 def test_flip_city_uses_personal_deck_and_shared_supply():
@@ -64,3 +65,23 @@ def test_flip_city_uses_personal_deck_and_shared_supply():
     assert len(r.state["personal_discard"][actor]) == 1
     r.action(actor, {"type": "turn"})
     assert len(r.state["personal_discard"][actor]) == 2
+
+
+def test_sushi_preserves_pudding_between_rounds():
+    r = room("sushi-go")
+    pudding = next(c for c in CATALOGS["sushi-go"][0] if r._card(c)["name"] == "布丁")
+    if pudding in r.state["deck"]:
+        r.state["deck"].remove(pudding)
+    r.state["table"][r.players[0].qq_id].append(pudding)
+    for p in r.players:
+        r.state["hands"][p.qq_id] = []
+    r.action(r.players[0].qq_id, {"type": "next_round"})
+    assert r.view()["players"][0]["puddings"] == 1
+
+
+def test_love_letter_discard_is_public():
+    r = room("love-letter")
+    actor = r.players[0].qq_id
+    card = r.state["hands"][actor][0]
+    r.action(actor, {"type": "discard", "card_id": card})
+    assert r.view()["discardCards"][0]["id"] == card

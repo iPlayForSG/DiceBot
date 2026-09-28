@@ -134,7 +134,8 @@ class WorkshopRoom:
             deck = []
         self.state.update({"deck": deck, "ending_deck": ending_deck, "hands": hands, "table": table,
                       "discard": [], "current": 0, "round": 1,
-                      "scores": {p.qq_id: 0 for p in self.players}, "chosen": {}})
+                      "scores": {p.qq_id: 0 for p in self.players}, "chosen": {},
+                      "saved_puddings": {p.qq_id: [] for p in self.players}})
         if self.game == "azul":
             self.state["tiles"] = {color: 20 for color in "wugrb"}
             self.state["factories"] = []
@@ -347,6 +348,10 @@ class WorkshopRoom:
                     raise GameError("请等待本轮所有手牌完成选择。")
                 n = {2: 10, 3: 9, 4: 8, 5: 7}[len(self.players)]
                 for p in self.players:
+                    self.state["saved_puddings"][p.qq_id].extend(
+                        c for c in table[p.qq_id] if self._card(c)["name"] == "布丁")
+                    self.state["discard"].extend(
+                        c for c in table[p.qq_id] if self._card(c)["name"] != "布丁")
                     hands[p.qq_id] = [self.state["deck"].pop() for _ in range(n)]
                     table[p.qq_id] = []
                 self.state["chosen"] = {}
@@ -400,11 +405,17 @@ class WorkshopRoom:
                 "players": [{"id": p.qq_id, "name": p.name, "avatar": p.avatar, "alive": p.alive,
                              "claimed": bool(p.token), "cards": len(hands.get(p.qq_id, [])),
                              "score": self.state.get("scores", {}).get(p.qq_id, 0),
+                             "puddings": len(self.state.get("saved_puddings", {}).get(p.qq_id, [])) +
+                                         sum(self._card(c)["name"] == "布丁" for c in table.get(p.qq_id, [])) if self.game == "sushi-go" else 0,
+                             "pattern": self.state.get("pattern", {}).get(p.qq_id, [[] for _ in range(5)]) if self.game == "azul" else [],
+                             "wall": self.state.get("wall", {}).get(p.qq_id, []) if self.game == "azul" else [],
+                             "tiles": self.state.get("player_tiles", {}).get(p.qq_id, []) if self.game == "azul" else [],
                              "table": [visible(c) for c in table.get(p.qq_id, [])]} for p in self.players],
                 "me": ({"id": qq_id, "hand": [visible(c) for c in hands.get(qq_id, [])],
                         "discard": [visible(c) for c in self.state.get("personal_discard", {}).get(qq_id, [])]} if qq_id else None),
                 "deckCount": (len(self.state.get("personal_decks", {}).get(qq_id, [])) if self.game == "flip-city" and qq_id else len(self.state.get("deck", []))),
                 "discardCount": (len(self.state.get("personal_discard", {}).get(qq_id, [])) if self.game == "flip-city" and qq_id else len(self.state.get("discard", []))),
+                "discardCards": [visible(c) for c in self.state.get("discard", [])[-30:]],
                 "market": market,
                 "factories": self.state.get("factories", []), "center": self.state.get("center", []),
                 "myTiles": self.state.get("player_tiles", {}).get(qq_id, []) if qq_id else [],
