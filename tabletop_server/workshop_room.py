@@ -274,6 +274,11 @@ class WorkshopRoom:
             remaining = [c for c in hands[qq_id] if self._card(c)["group"] != "ending"]
             if remaining:
                 raise GameError("请先打完所有故事牌。")
+            ending = next((c for c in hands[qq_id] if self._card(c)["group"] == "ending"), None)
+            if not ending:
+                raise GameError("你没有结局牌。")
+            hands[qq_id].remove(ending)
+            table[qq_id].append(ending)
             self.phase = "finished"
             self._record(f"{player.name} 打出结局牌，完成故事。")
         elif kind == "score":
@@ -337,6 +342,9 @@ class WorkshopRoom:
                 if self.state["round"] > 3:
                     self.state["round"] -= 1
                     raise GameError("三轮已结束，请结算布丁与总分。")
+                if any(hands[p.qq_id] for p in self.players) or self.state["chosen"]:
+                    self.state["round"] -= 1
+                    raise GameError("请等待本轮所有手牌完成选择。")
                 n = {2: 10, 3: 9, 4: 8, 5: 7}[len(self.players)]
                 for p in self.players:
                     hands[p.qq_id] = [self.state["deck"].pop() for _ in range(n)]

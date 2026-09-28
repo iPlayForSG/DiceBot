@@ -31,7 +31,7 @@ window.startWorkshopRoom = function startWorkshopRoom({api, code, initial, notif
     socket.onopen = () => socket.send(token);
     socket.onmessage = (event) => { view = JSON.parse(event.data); render(); };
     socket.onclose = (event) => {
-      if (event.code === 1008) { token = null; localStorage.removeItem(`dicebot:${code}`); view.me = null; render(); }
+      if (event.code === 1008 || event.code === 1001) { token = null; localStorage.removeItem(`dicebot:${code}`); view.me = null; render(); }
       else if (token) setTimeout(connect, 2500);
     };
   }
