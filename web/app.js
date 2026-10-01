@@ -11,8 +11,7 @@ const signatureLabel = (value) => value.startsWith("cat:") ? catNames[Number(val
 let manifest = null;
 let cards = {};
 let state = null;
-let token = code ? localStorage.getItem(`dicebot:${code}`) : null;
-let socket = null;
+let kittenSession = null;
 let selected = [];
 let toastTimer = null;
 
@@ -26,17 +25,11 @@ function notify(message) {
 
 async function request(path, options = {}) {
   const headers = {"Content-Type":"application/json", ...(options.headers || {})};
-  if (token) headers.Authorization = `Bearer ${token}`;
   let response;
   try { response = await fetch(`${API}${path}`, {...options, headers}); }
   catch { throw new Error("无法连接实时服务，请稍后重试。"); }
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    if (response.status === 401 && code) {
-      localStorage.removeItem(`dicebot:${code}`);
-      token = null;
-      loadRoom();
-    }
     throw new Error(typeof body.detail === "string" ? body.detail : "操作失败，请稍后重试。");
   }
   return body;
@@ -178,36 +171,8 @@ function render(next) {
   }
 }
 
-function connect() {
-  if (!token) return;
-  if (socket) socket.close();
-  const wsBase = API.replace(/^http/, "ws");
-  socket = new WebSocket(`${wsBase}/ws/${code}`);
-  $("connection").textContent = "连接中…";
-  socket.onopen = () => {socket.send(token); $("connection").textContent = "● 实时在线";};
-  socket.onmessage = (event) => render(JSON.parse(event.data));
-  socket.onclose = (event) => {
-    $("connection").textContent = "● 已断线，重连中";
-    if (event.code === 1008 || event.code === 1001) {
-      token = null;
-      localStorage.removeItem(`dicebot:${code}`);
-      loadRoom();
-      return;
-    }
-    if (token) setTimeout(() => connect(), 2500);
-  };
-}
-
-async function loadRoom() {
-  try {
-    const publicView = await request(`/api/rooms/${code}`);
-    render(token ? await request(`/api/rooms/${code}/me`).catch(() => publicView) : publicView);
-    if (token) connect();
-  } catch (error) { notify(error.message); $("connection").textContent = "连接失败"; }
-}
-
 async function submitAction(payload) {
-  try { await request(`/api/rooms/${code}/actions`, {method:"POST",body:JSON.stringify(payload)}); selected = []; if (state) {renderHand(); renderActions();} }
+  try { await kittenSession.action(payload); selected = []; if (state) {renderHand(); renderActions();} }
   catch (error) { notify(error.message); }
 }
 
@@ -222,11 +187,7 @@ $("claim-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
     const claimCode = $("claim-code").value.trim().toUpperCase();
-    const result = await request(`/api/rooms/${code}/claim`, {method:"POST",body:JSON.stringify({claim_code:claimCode})});
-    token = result.token;
-    localStorage.setItem(`dicebot:${code}`, token);
-    connect();
-    render(await request(`/api/rooms/${code}/me`));
+    await kittenSession.claim(claimCode);
     notify("已进入你的座位。");
   } catch (error) { notify(error.message); }
 });
@@ -280,7 +241,7 @@ $("secondary-action").addEventListener("click", () => {
     const preview = await request(`/api/rooms/${code}`);
     if (["love-letter","once-upon-a-time","sushi-go","azul","flip-city","hanamikoji"].includes(preview.game)) {
       $("workshop").hidden = false;
-      window.startWorkshopRoom({api: API, code, initial: preview, notify});
+      await window.startWorkshopRoom({api: API, code, initial: preview, notify});
       return;
     }
     if (preview.game && preview.game !== "exploding-kittens") {
@@ -291,7 +252,9 @@ $("secondary-action").addEventListener("click", () => {
     $("game").hidden = false;
     manifest = await fetch(asset("manifest.json")).then((response) => response.json());
     cards = Object.fromEntries(manifest.cards.map((card) => [card.id,card]));
-    await loadRoom();
+    kittenSession = window.createRoomSession({api:API, code, initial:preview,
+      onView:render, onStatus:message => {$("connection").textContent=message;}, onError:notify});
+    await kittenSession.start();
   } catch (error) {
     $("game").hidden = true;
     $("party").hidden = true;

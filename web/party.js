@@ -3,58 +3,27 @@
 window.startPartyRoom = async function startPartyRoom({api, code, initial, notify}) {
   const root = document.getElementById("party");
   const game = initial.game;
+  const artwork = (await window.tabletopArtReady)[game];
   const manifest = await fetch(`./public/assets/${game}/manifest.json`).then((response) => {
     if (!response.ok) throw new Error("游戏图包加载失败，请刷新页面。");
     return response.json();
   });
   const escape = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]);
-  const img = (path, alt = "") => path ? `<img src="./${escape(path)}" alt="${escape(alt)}" loading="lazy">` : "";
+  const img = (path, alt = "") => path ? `<img src="./${escape(path)}" alt="${escape(alt)}" loading="lazy" data-card-preview tabindex="0" role="button" title="点击查看大图">` : "";
+  const hiddenCards = (count, label="未公开的牌") => Array.from({length:count}, () => `<figure class="party-card card-face-down">${img(artwork.back,label)}<figcaption>${escape(label)}</figcaption></figure>`).join("");
   const avatar = (player) => player.avatar
     ? `<img class="party-avatar" src="${api}/api/avatars/${encodeURIComponent(player.id)}" alt="${escape(player.name)} 的头像">`
     : `<span class="party-avatar">${escape(player.name.charAt(0))}</span>`;
   const options = (items, placeholder = "请选择") => `<option value="">${placeholder}</option>${items.map(([value, label]) => `<option value="${escape(value)}">${escape(label)}</option>`).join("")}`;
-  let token = localStorage.getItem(`dicebot:${code}`);
   let view = initial;
-  let socket;
-
-  async function request(path, method = "GET", body = null) {
-    let response;
-    try {
-      response = await fetch(`${api}${path}`, {
-        method,
-        headers: {"Content-Type":"application/json", ...(token ? {Authorization:`Bearer ${token}`} : {})},
-        ...(body ? {body:JSON.stringify(body)} : {}),
-      });
-    } catch { throw new Error("无法连接游戏服务，请稍后重试。"); }
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      if (response.status === 401) {
-        token = null;
-        localStorage.removeItem(`dicebot:${code}`);
-      }
-      throw new Error(typeof result.detail === "string" ? result.detail : "操作失败，请重试。");
-    }
-    return result;
-  }
-
-  function connect() {
-    if (!token) return;
-    if (socket) socket.close();
-    socket = new WebSocket(`${api.replace(/^http/, "ws")}/ws/${code}`);
-    socket.onopen = () => socket.send(token);
-    socket.onmessage = (event) => {view = JSON.parse(event.data); render();};
-    socket.onclose = (event) => {
-      if (event.code === 1008) {
-        token = null;
-        localStorage.removeItem(`dicebot:${code}`);
-        view.me = null;
-        render();
-      } else if (token) setTimeout(connect, 2500);
-    };
-  }
+  let connectionLabel = "恢复座位…";
+  const session = window.createRoomSession({api, code, initial,
+    onView:next => {view = next; render();},
+    onStatus:message => {connectionLabel=message; const node=root.querySelector("[data-room-connection]"); if(node) node.textContent=message;},
+    onError:notify});
 
   async function send(action) {
-    try { view = await request(`/api/rooms/${code}/actions`, "POST", action); render(); }
+    try { await session.action(action); }
     catch (error) { notify(error.message); }
   }
 
@@ -73,14 +42,14 @@ window.startPartyRoom = async function startPartyRoom({api, code, initial, notif
     if (obj.type === "Card" && obj.image && /^\d+\s+\d+\s+[wugrb]\s+/.test(obj.name)) {
       const [id, points, bonus, costText] = obj.name.split(" ");
       const cost = Object.fromEntries([...costText.matchAll(/(\d+)([wugrb])/g)].map((m) => [m[2],Number(m[1])]));
-      splendorCards[`s${id}`] = {points:Number(points),bonus,cost,image:`public/assets/splendor/${obj.image}`};
+      splendorCards[`s${id}`] = {points:Number(points),bonus,cost,tier:({5:1,6:2,7:3})[Math.floor(obj.card_id/100)],image:`public/assets/splendor/${obj.image}`};
     }
     if (obj.type === "Custom_Tile" && obj.custom_image && /\d+[wugrb]/.test(obj.name)) {
       nobles[`n${index}`] = {image:`public/assets/splendor/${obj.custom_image}`,cost:obj.name};
     }
   });
   const gemNames = {w:"白",u:"蓝",g:"绿",r:"红",b:"黑",j:"黄金"};
-  const roleIndices = {"公爵":0,"上尉":1,"刺客":2,"女爵":3,"大使":4,"判官":5,"官僚":6,"投机者":7,"弄臣":8};
+  const gemBank = counts => `<div class="gem-bank">${Object.entries(counts || {}).map(([color,count])=>`<span class="gem gem-${color}">${img(artwork.gems?.[color],gemNames[color]+"宝石")}<strong>${gemNames[color]} ${count}</strong></span>`).join("")}</div>`;
 
   function imageCard(id, details = "") {
     if (game === "cubirds") {
@@ -91,7 +60,7 @@ window.startPartyRoom = async function startPartyRoom({api, code, initial, notif
       const card = splendorCards[id];
       return card ? `<figure class="party-card">${img(card.image,`${card.points} 分，${gemNames[card.bonus]}色奖励`)}<figcaption>${card.points} 分 · ${gemNames[card.bonus]}色${details}</figcaption></figure>` : "";
     }
-    if (game === "coup") return `<figure class="party-card">${img(`public/assets/coup/cards/deck-3-${String(roleIndices[id]).padStart(2,"0")}.webp`,id)}<figcaption>${escape(id)}${details}</figcaption></figure>`;
+    if (game === "coup") return `<figure class="party-card">${img(artwork.roles[id],id)}<figcaption>${escape(id)}${details}</figcaption></figure>`;
     return "";
   }
 
@@ -99,11 +68,11 @@ window.startPartyRoom = async function startPartyRoom({api, code, initial, notif
     const state = view.state, me = view.me, current = view.current === me?.id;
     const species = [...new Set((me?.hand || []).map((id) => bird(id).species))];
     const collection = state.collection || {};
-    return `<section class="party-panel"><h2>篱笆上的鸟</h2><p>同种鸟放在一排的左端或右端，围住的鸟加入手牌。</p>
+    return `<section class="party-panel" data-public-table><h2>篱笆上的鸟</h2><p>同种鸟放在一排的左端或右端，围住的鸟加入手牌。</p>
       <div class="bird-rows">${(state.rows || []).map((row, index) => `<div class="bird-row"><strong>第 ${index+1} 排</strong><div class="party-card-strip">${row.map((id) => imageCard(id)).join("")}</div></div>`).join("")}</div>
       <p>抽牌堆 ${state.deckCount ?? 0} 张 · 弃牌堆 ${state.discardCount ?? 0} 张</p></section>
       <section class="party-panel"><h2>收集进度</h2><div class="party-collection">${view.players.map((player) => `<div><strong>${escape(player.name)}</strong><div class="party-card-strip">${(collection[player.id] || []).map((id) => imageCard(id)).join("")}</div></div>`).join("")}</div></section>
-      <section class="party-panel"><h2>我的手牌</h2>${me ? `<div class="party-card-strip">${me.hand.map((id) => imageCard(id)).join("")}</div>` : "<p>认领自己的 QQ 座位后可见手牌。</p>"}</section>
+      <section class="party-panel private-hand-panel" data-private-hand><h2>我的手牌 <small>仅自己可见</small></h2>${me ? `<div class="party-card-strip">${me.hand.map((id) => imageCard(id)).join("")}</div>` : "<p>当前浏览器尚未认领身份。输入 Bot 私聊的身份码后显示手牌。</p>"}</section>
       ${current ? `<section class="party-panel party-controls"><h2>本回合操作</h2>${state.stage === "place" ? `<form data-action="bird-place"><label>鸟类<select name="species" required>${options(species.map((name) => [name,name]))}</select></label><label>排数<select name="row">${[0,1,2,3].map((n) => `<option value="${n}">第 ${n+1} 排</option>`).join("")}</select></label><label>方向<select name="side"><option value="left">左端</option><option value="right">右端</option></select></label><button class="primary-action">摆出这类鸟</button></form>` : `<div class="party-actions">${state.can_draw_two ? `<button data-action="bird-draw">额外摸 2 张</button>` : ""}${state.flock_done ? "" : `<form data-action="bird-flock"><label>完成鸟群<select name="species" required>${options(species.map((name) => [name,name]))}</select></label><button>收集鸟群</button></form>`}<button data-action="bird-end" class="primary-action">结束回合</button></div>`}</section>` : ""}`;
   }
 
@@ -111,11 +80,12 @@ window.startPartyRoom = async function startPartyRoom({api, code, initial, notif
     const state = view.state, me = view.me, current = view.current === me?.id;
     const canAct = current && !state.pending_noble?.length;
     const cardBox = (id, tier, reserved = false) => `<div class="market-card">${imageCard(id)}${canAct ? `<div><button data-action="s-buy" data-card="${id}" data-tier="${tier}">购买</button>${reserved ? "" : `<button data-action="s-reserve" data-card="${id}" data-tier="${tier}">保留</button>`}</div>` : ""}</div>`;
-    return `<section class="party-panel"><h2>宝石供应</h2><div class="gem-bank">${Object.entries(state.bank || {}).map(([color,count]) => `<span class="gem gem-${color}">${gemNames[color]} ${count}</span>`).join("")}</div></section>
-      <section class="party-panel"><h2>发展卡市场</h2>${[3,2,1].map((tier) => `<div class="market-tier"><h3>${tier} 级 · 牌堆剩余 ${state.decks?.[tier] ?? 0} 张</h3><div class="market-grid">${(state.market?.[tier] || []).map((id) => cardBox(id,tier)).join("")}</div>${canAct ? `<button data-action="s-blind" data-tier="${tier}">盲抽保留</button>` : ""}</div>`).join("")}</section>
+    return `<section class="party-panel"><h2>宝石供应</h2>${gemBank(state.bank)}</section>
+      <section class="party-panel" data-public-table><h2>发展卡市场</h2>${[3,2,1].map((tier) => `<div class="market-tier"><h3>${tier} 级 · 牌堆剩余 ${state.decks?.[tier] ?? 0} 张</h3><div class="market-grid">${(state.market?.[tier] || []).map((id) => cardBox(id,tier)).join("")}</div>${canAct ? `<button data-action="s-blind" data-tier="${tier}">盲抽保留</button>` : ""}</div>`).join("")}</section>
       <section class="party-panel"><h2>贵族</h2><div class="party-card-strip">${(state.nobles || []).map((id) => `<figure class="party-card">${img(nobles[id]?.image,"贵族卡")}</figure>`).join("")}</div></section>
       <section class="party-panel"><h2>玩家进度</h2><div class="party-stats">${view.players.map((p) => {const built=state.built?.[p.id] || [];const points=built.reduce((n,id)=>n+(splendorCards[id]?.points||0),0)+3*(state.claimed?.[p.id]?.length||0);return `<div><strong>${escape(p.name)} · ${points} 分</strong><span>${built.length} 张发展卡 · ${state.claimed?.[p.id]?.length||0} 位贵族 · ${typeof state.reserved?.[p.id] === "number" ? state.reserved[p.id] : state.reserved?.[p.id]?.length||0} 张保留牌</span></div>`;}).join("")}</div></section>
-      ${me ? `<section class="party-panel"><h2>我的宝石与保留牌</h2><div class="gem-bank">${Object.entries(state.hold?.[me.id] || {}).map(([color,count]) => `<span class="gem gem-${color}">${gemNames[color]} ${count}</span>`).join("")}</div><div class="market-grid">${(state.reserved?.[me.id] || []).map((id) => cardBox(id,splendorCards[id]?.tier || 1,true)).join("")}</div></section>` : ""}
+      <section class="party-panel"><h2>每位玩家的公开桌面</h2>${view.players.map(p=>`<article class="public-player-table"><h3>${escape(p.name)}</h3>${gemBank(state.hold?.[p.id])}<div class="party-card-strip">${(state.built?.[p.id]||[]).map(id=>imageCard(id)).join("")}${(state.claimed?.[p.id]||[]).map(id=>`<figure class="party-card">${img(nobles[id]?.image,"已获得贵族")}</figure>`).join("")}</div><p>保留牌</p><div class="party-card-strip">${p.id===me?.id?(state.reserved?.[p.id]||[]).map(id=>imageCard(id)).join(""):hiddenCards(Number(state.reserved?.[p.id]||0),"私密保留牌")}</div></article>`).join("")}</section>
+      <section class="party-panel private-hand-panel" data-private-hand><h2>我的宝石与保留牌 <small>仅自己可见</small></h2>${me ? `${gemBank(state.hold?.[me.id])}<div class="market-grid">${(state.reserved?.[me.id] || []).map((id) => cardBox(id,splendorCards[id]?.tier || 1,true)).join("") || "<p>你尚未保留卡牌。</p>"}</div>` : "<p>输入身份码后可查看自己的保留牌。</p>"}</section>
       ${current && state.pending_noble?.length ? `<section class="party-panel party-controls"><h2>选择访问你的贵族</h2><div class="party-actions">${state.pending_noble.map((id) => `<button data-action="s-noble" data-noble="${id}">${img(nobles[id]?.image,"贵族卡")}选择这位贵族</button>`).join("")}</div></section>` : ""}
       ${canAct ? `<section class="party-panel party-controls"><h2>领取宝石</h2><form data-action="s-take"><p>选至多 3 种不同颜色；要取 2 枚同色，请在前两项选同一种。</p><div class="party-form-row">${[1,2,3].map((n) => `<label>第 ${n} 枚<select name="color${n}">${options(Object.entries(gemNames).filter(([key]) => key !== "j").map(([key,name]) => [key,name+"色"]),"不取")}</select></label>`).join("")}</div><details><summary>持有超过 10 枚时选择归还</summary><div class="party-form-row">${Object.entries(gemNames).map(([key,name]) => `<label>${name}<input type="number" name="return_${key}" min="0" max="10" value="0"></label>`).join("")}</div></details><button class="primary-action">领取宝石</button></form></section>` : ""}`;
   }
@@ -125,11 +95,11 @@ window.startPartyRoom = async function startPartyRoom({api, code, initial, notif
     const playerOptions = view.players.map((p) => [p.id,p.name]);
     const role = me?.role ? `<div class="secret-role">${me.roleImage ? img(me.roleImage,me.role) : ""}<div><strong>你的身份：${escape(me.role)}</strong><p>${me.known?.length ? `你认得：${me.known.map((id) => escape(view.players.find((p) => p.id === id)?.name || id)).join("、")}` : "你没有额外的身份情报。"}</p></div></div>` : "<p>认领座位后可查看自己的秘密身份。</p>";
     const stageText = {propose:"队长提名任务队伍",team_vote:"全员秘密表决队伍",quest_vote:"队员秘密提交任务牌",assassinate:"刺客决定刺杀对象"};
-    return `<section class="party-panel"><h2>身份情报</h2>${role}</section>
-      <section class="party-panel"><h2>任务进度</h2><div class="quest-track">${[0,1,2,3,4].map((n) => `<div class="quest ${state.results?.[n] === true ? "quest-good" : state.results?.[n] === false ? "quest-evil" : ""}"><strong>${n+1}</strong><span>${state.results?.[n] === true ? "成功" : state.results?.[n] === false ? "失败" : `${({5:[2,3,2,3,3],6:[2,3,4,3,4],7:[2,3,3,4,4],8:[3,4,4,5,5],9:[3,4,4,5,5],10:[3,4,4,5,5]})[view.players.length][n]} 人`}</span></div>`).join("")}</div><p>${escape(stageText[state.stage] || "等待结算")} · 连续否决 ${state.rejections || 0}/5</p>${state.team?.length ? `<p>本次队员：${state.team.map((id) => escape(view.players.find((p) => p.id === id)?.name || id)).join("、")}</p>` : ""}</section>
+    return `<section class="party-panel private-hand-panel" data-private-hand><h2>我的身份牌 <small>仅自己可见</small></h2>${role}</section>
+      <section class="party-panel" data-public-table><h2>任务进度</h2><div class="quest-track">${[0,1,2,3,4].map((n) => `<div class="quest ${state.results?.[n] === true ? "quest-good" : state.results?.[n] === false ? "quest-evil" : ""}"><strong>${n+1}</strong>${img(state.results?.[n]===true?artwork.choices.success:state.results?.[n]===false?artwork.choices.fail:artwork.back,state.results?.[n]===true?"任务成功":state.results?.[n]===false?"任务失败":"尚未执行任务")}<span>${state.results?.[n] === true ? "成功" : state.results?.[n] === false ? "失败" : `${({5:[2,3,2,3,3],6:[2,3,4,3,4],7:[2,3,3,4,4],8:[3,4,4,5,5],9:[3,4,4,5,5],10:[3,4,4,5,5]})[view.players.length][n]} 人`}</span></div>`).join("")}</div><p>${escape(stageText[state.stage] || "等待结算")} · 连续否决 ${state.rejections || 0}/5</p>${state.team?.length ? `<p>本次队员：${state.team.map((id) => escape(view.players.find((p) => p.id === id)?.name || id)).join("、")}</p>` : ""}<p>队伍票已交 ${state.voteCount||0}/${view.players.length} · 任务牌已交 ${state.questVoteCount||0}/${state.team?.length||0}</p></section>
       ${me && state.stage === "propose" && current ? `<section class="party-panel party-controls"><h2>提名队伍</h2><form data-action="a-propose"><div class="team-select">${view.players.map((p) => `<label><input type="checkbox" name="team" value="${escape(p.id)}">${escape(p.name)}</label>`).join("")}</div><button class="primary-action">提交队伍</button></form></section>` : ""}
-      ${me && state.stage === "team_vote" && !state.votes?.[me.id] ? `<section class="party-panel party-controls"><h2>秘密表决</h2><div class="party-actions"><button data-action="a-vote" data-vote="approve">赞成队伍</button><button data-action="a-vote" data-vote="reject">反对队伍</button></div></section>` : ""}
-      ${me && state.stage === "quest_vote" && state.team?.includes(me.id) && !state.quest_votes?.[me.id] ? `<section class="party-panel party-controls"><h2>秘密提交任务牌</h2><div class="party-actions"><button data-action="a-quest" data-vote="success">任务成功</button>${["刺客","莫甘娜","莫德雷德","奥伯伦","爪牙"].includes(me.role) ? `<button data-action="a-quest" data-vote="fail">任务失败</button>` : ""}</div></section>` : ""}
+      ${me && state.stage === "team_vote" && !state.votes?.[me.id] ? `<section class="party-panel party-controls"><h2>秘密表决</h2><div class="party-actions"><button data-action="a-vote" data-vote="approve">${img(artwork.choices.approve,"赞成队伍")}赞成队伍</button><button data-action="a-vote" data-vote="reject">${img(artwork.choices.reject,"反对队伍")}反对队伍</button></div></section>` : ""}
+      ${me && state.stage === "quest_vote" && state.team?.includes(me.id) && !state.quest_votes?.[me.id] ? `<section class="party-panel party-controls"><h2>秘密提交任务牌</h2><div class="party-actions"><button data-action="a-quest" data-vote="success">${img(artwork.choices.success,"任务成功")}任务成功</button>${["刺客","莫甘娜","莫德雷德","奥伯伦","爪牙"].includes(me.role) ? `<button data-action="a-quest" data-vote="fail">${img(artwork.choices.fail,"任务失败")}任务失败</button>` : ""}</div></section>` : ""}
       ${me?.role === "刺客" && state.stage === "assassinate" ? `<section class="party-panel party-controls"><h2>选择刺杀对象</h2><form data-action="a-assassinate"><label>目标<select name="target" required>${options(playerOptions.filter(([id]) => id !== me.id))}</select></label><button class="primary-action">确认刺杀</button></form></section>` : ""}`;
   }
 
@@ -140,8 +110,8 @@ window.startPartyRoom = async function startPartyRoom({api, code, initial, notif
     const isReformation = view.mode === "reformation";
     const targetOptions = view.players.filter((p) => p.alive && (p.id !== me?.id || isReformation))
       .map((p) => [p.id, p.id === me?.id ? `${p.name}（自己，仅用于转换阵营）` : p.name]);
-    const stats = `<section class="party-panel"><h2>权力与硬币</h2><div class="party-stats">${view.players.map((p) => `<div><strong>${escape(p.name)} ${p.alive ? "" : "· 已出局"}</strong><span>${state.coins?.[p.id] ?? 0} 枚硬币 · ${p.cards} 张影响牌${state.factions?.[p.id] ? ` · ${escape(state.factions[p.id])}` : ""}</span><small>已公开：${(state.lost?.[p.id] || []).join("、") || "无"}</small></div>`).join("")}</div>${isReformation ? `<p>国库：${state.treasury} 枚。不能对其他同阵营玩家发动针对行动。</p>` : ""}</section>`;
-    const ownHand = me ? `<section class="party-panel"><h2>我的影响牌</h2><div class="party-card-strip">${me.hand.map((role) => imageCard(role)).join("")}</div><p>身份只在你的浏览器显示。失去全部影响牌即出局。</p></section>` : "";
+    const stats = `<section class="party-panel" data-public-table><h2>公开场况</h2><div class="coup-table">${view.players.map((p) => `<article class="coup-seat ${view.current===p.id?"is-current":""}"><h3>${escape(p.name)} ${p.alive ? "" : "· 已出局"}</h3><div class="coup-seat-meta"><span class="table-token">${img(artwork.coin,"硬币")}<strong>${state.coins?.[p.id] ?? 0} 枚</strong></span>${state.factions?.[p.id] ? `<figure class="coup-faction">${img(artwork.factions[state.factions[p.id]],state.factions[p.id]+"阵营")}<figcaption>${escape(state.factions[p.id])}</figcaption></figure>` : ""}</div><div class="party-card-strip">${hiddenCards(p.cards,"未公开影响牌")}${(state.lost?.[p.id] || []).map(role=>imageCard(role," · 已失去")).join("")}</div><small>${p.cards} 张影响牌仍未公开 · ${(state.lost?.[p.id] || []).length} 张已失去</small></article>`).join("")}</div><div class="coup-bank"><figure class="party-card">${img(artwork.back,"公共影响牌堆")}<figcaption>牌库 ${state.deckCount ?? 0} 张</figcaption></figure>${isReformation?`<figure class="party-card">${img(artwork.treasury,"国库储备金")}<figcaption>国库 ${state.treasury} 枚</figcaption></figure>`:""}</div>${isReformation ? `<p>不能对其他同阵营玩家发动针对行动。</p>` : ""}</section>`;
+    const ownHand = `<section class="party-panel private-hand-panel" data-private-hand><h2>我的影响牌 <small>仅自己可见</small></h2>${me ? `<p>你的座位：${escape(me.name)}</p><div class="party-card-strip">${me.hand.map((role) => imageCard(role)).join("") || "<p>你已失去全部影响牌。</p>"}</div><p>点击卡牌可放大。其他玩家只能看见你的牌背及已公开的影响牌。</p>` : `<p>当前浏览器尚未认领身份。输入 Bot 私聊的身份码后，这里会显示你的卡牌图片。</p>`}</section>`;
     let controls = "";
     if (pending) {
       const actor = view.players.find((p) => p.id === pending.actor)?.name || "玩家";
@@ -164,7 +134,7 @@ window.startPartyRoom = async function startPartyRoom({api, code, initial, notif
         actions += `<form data-action="c-exchange"><p>勾选要洗回牌库的牌，最后保留两张。</p>${me.hand.map((role,i) => `<label><input type="checkbox" name="card" value="${escape(role)}">第 ${i+1} 张 ${escape(role)}</label>`).join("")}<button class="primary-action">完成交换</button></form>`;
       }
       if (me && pending.inspection && pending.actor === me.id) {
-        actions += `<div><p>你看到了：${escape(pending.inspection)}</p><button data-action="c-inspect-keep">让对方保留</button><button data-action="c-inspect-change">要求更换</button></div>`;
+        actions += `<div><p>检视结果，仅你可见：</p>${imageCard(pending.inspection)}<button data-action="c-inspect-keep">让对方保留</button><button data-action="c-inspect-change">要求更换</button></div>`;
       }
       if (me && pending.disorder && pending.actor === me.id) {
         actions += `<form data-action="c-disorder"><p>从手中选一张给目标，再选一张洗回牌库；最后保留两张。</p><label>给目标<select name="to_target">${options(me.hand.map((role) => [role,role]))}</select></label><label>归还牌库<select name="to_deck">${options(me.hand.map((role) => [role,role]))}</select></label><button class="primary-action">完成骚乱</button></form>`;
@@ -180,13 +150,13 @@ window.startPartyRoom = async function startPartyRoom({api, code, initial, notif
       if (isReformation) moves.push(["inspect","判官：检视"],["convert","转换阵营"],["embezzle","挪用国库"]);
       controls = `<section class="party-panel party-controls"><h2>宣布行动</h2><form data-action="c-declare"><label>行动<select name="move">${moves.map(([value,label]) => `<option value="${value}">${label}</option>`).join("")}</select></label><label>目标<select name="target">${options(targetOptions)}</select></label><button class="primary-action">宣布行动</button></form></section>`;
     }
-    return stats + ownHand + controls;
+    return ownHand + stats + controls;
   }
 
   function render() {
     const me = view.me, state = view.state || {};
-    root.innerHTML = `<div class="party-top"><div><a href="./">← 游戏库</a><span class="party-kicker">${escape(view.name)} · ${escape(view.mode === "basic" ? "基础" : view.mode === "advanced" ? "进阶" : view.mode.startsWith("ks-") ? "KS 角色包" : "扩展")}</span><h1>${escape(view.name)}</h1><p>房间 ${escape(code)} · ${escape(view.phase === "lobby" ? "等待开局" : view.phase === "finished" ? "游戏结束" : `轮到 ${view.players.find((p) => p.id === view.current)?.name || "玩家"}`)}</p></div><button type="button" data-action="copy-link">复制游玩链接</button></div>
-      <div class="party-columns"><aside class="party-sidebar"><h2>玩家 · ${view.players.length}</h2><div class="party-player-list">${view.players.map((p) => `<div class="party-player ${p.id === view.current ? "is-current" : ""}">${avatar(p)}<span><strong>${escape(p.name)}</strong><small>${p.alive ? p.claimed ? "已入座" : "等待入座" : "已出局"}</small></span></div>`).join("")}</div>${!me ? `<div class="party-panel party-claim"><h3>输入身份码认领座位</h3><p>Bot 会私聊发送身份码。请确认群设置已开启“允许群成员私聊”。</p><form data-action="claim"><label>你的身份码<input name="claim_code" autocomplete="one-time-code" maxlength="10" minlength="10" placeholder="输入 10 位身份码" required></label><button class="primary-action">认领我的座位</button></form></div>` : `<p class="party-self">你已入座：${escape(me.name)}</p>`}</aside>
+    root.innerHTML = `<div class="party-top"><div><a href="./">← 游戏库</a><span class="party-kicker">${escape(view.name)} · ${escape(view.mode === "basic" ? "基础" : view.mode === "advanced" ? "进阶" : view.mode.startsWith("ks-") ? "KS 角色包" : "扩展")}</span><h1>${escape(view.name)}</h1><p>房间 ${escape(code)} · ${escape(view.phase === "lobby" ? "等待开局" : view.phase === "finished" ? "游戏结束" : `轮到 ${view.players.find((p) => p.id === view.current)?.name || "玩家"}`)}</p></div><div class="party-top-tools"><span data-room-connection>${escape(connectionLabel)}</span><button type="button" data-action="copy-link">复制游玩链接</button></div></div>
+      <div class="party-columns"><aside class="party-sidebar"><h2>玩家 · ${view.players.length}</h2><div class="party-player-list">${view.players.map((p) => `<div class="party-player ${p.id === view.current ? "is-current" : ""}">${avatar(p)}<span><strong>${escape(p.name)}</strong><small>${p.alive ? p.id === me?.id ? "我的座位" : p.claimed ? "座位已认领" : "等待认领" : "已出局"}</small></span></div>`).join("")}</div>${!me ? `<div class="party-panel party-claim"><h3>输入身份码认领座位</h3><p>Bot 会私聊发送身份码。请确认群设置已开启“允许群成员私聊”。</p><form data-action="claim"><label>你的身份码<input name="claim_code" autocomplete="one-time-code" maxlength="10" minlength="10" placeholder="输入 10 位身份码" required></label><button class="primary-action">认领我的座位</button></form></div>` : `<p class="party-self">你已入座：${escape(me.name)}</p>`}</aside>
       <div class="party-main">${view.phase === "lobby" ? `<section class="party-panel"><h2>等待房主开局</h2><p>在 QQ 群发送「/桌游 加入 ${escape(code)}」，Bot 会私聊身份码。所有人加入后由房主发送「/桌游 开始」；创建后 5 分钟未开始会自动取消。</p></section>` : game === "cubirds" ? cubirdsBoard() : game === "splendor" ? splendorBoard() : game === "avalon" ? avalonBoard() : coupBoard()}
       <section class="party-panel party-log"><h2>最近动态</h2><ol>${(view.log || []).slice().reverse().map((entry) => `<li>${escape(entry)}</li>`).join("")}</ol></section></div></div>`;
   }
@@ -224,12 +194,7 @@ window.startPartyRoom = async function startPartyRoom({api, code, initial, notif
     const data = new FormData(form), act = form.dataset.action;
     if (act === "claim") {
       try {
-        const result = await request(`/api/rooms/${code}/claim`, "POST", {claim_code:String(data.get("claim_code") || "").trim().toUpperCase()});
-        token = result.token;
-        localStorage.setItem(`dicebot:${code}`, token);
-        view = await request(`/api/rooms/${code}/me`);
-        connect();
-        render();
+        await session.claim(String(data.get("claim_code") || "").trim().toUpperCase());
         notify("已进入你的座位。");
       } catch (error) { notify(error.message); }
       return;
@@ -250,9 +215,5 @@ window.startPartyRoom = async function startPartyRoom({api, code, initial, notif
     if (action) await send(action);
   });
 
-  if (token) {
-    try { view = await request(`/api/rooms/${code}/me`); connect(); }
-    catch (error) { notify(error.message); view = initial; }
-  }
-  render();
+  await session.start();
 };

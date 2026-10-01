@@ -43,6 +43,30 @@
 .party-card { flex: 0 0 85px; margin: 0; text-align: center; font-size: 11px; color: #6b5946; }
 .party-card img { display: block; width: 100%; aspect-ratio: .72; object-fit: cover; border-radius: 6px; border: 2px solid white; box-shadow: 0 3px 7px #372b1e40; }
 .party-card figcaption { padding-top: 4px; }
+.party-card { flex-basis: 126px; }
+.party-card img { aspect-ratio: auto; height: auto; object-fit: contain; cursor: zoom-in; }
+.private-hand-panel { order: -1; border-color: #c8884b; background: #fff9ed; }
+.private-hand-panel h2 small { font-size: 12px; color: #6a765e; font-weight: normal; }
+.party-top-tools { display: grid; justify-items: end; gap: 12px; }
+[data-room-connection] { font-size: 12px; color: #3e6f57; }
+.coup-table { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: 18px; }
+.coup-seat { padding: 15px; border: 1px solid #517060; border-radius: 12px; color: #f8eed8; background: #204c40; min-width: 0; }
+.coup-seat.is-current { box-shadow: inset 0 0 0 2px #e1ad43; }
+.coup-seat h3 { color: #f8eed8; margin: 0 0 12px; }
+.coup-seat small { color: #ecdfc4; }
+.coup-seat .party-card { color: #f8eed8; flex-basis: 99px; }
+.coup-seat-meta { display: flex; align-items: center; gap: 18px; margin-bottom: 12px; }
+.table-token { display: inline-flex; align-items: center; gap: 7px; }
+.table-token img { width: 44px; height: 44px; object-fit: contain; border-radius: 50%; }
+.coup-faction { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.coup-faction img { width: 40px; height: 60px; object-fit: contain; border-radius: 4px; }
+.coup-bank { display: flex; gap: 15px; align-items: start; margin-top: 18px; }
+.coup-bank .party-card { flex-basis: 78px; }
+.gem { display: inline-flex; align-items: center; gap: 7px; }
+.gem img { width: 40px; height: 40px; border-radius: 50%; object-fit: contain; }
+.public-player-table { border-top: 1px solid #dfcfb5; padding: 8px 0 14px; }
+.quest img { width: min(90%,86px); height: 105px; object-fit: contain; margin: 8px 0; }
+.secret-role img { cursor: zoom-in; }
 .bird-rows { display: grid; gap: 10px; }
 .bird-row { display: grid; grid-template-columns: 66px minmax(0,1fr); align-items: center; gap: 8px; background: #245547; border: 6px solid #694b32; border-radius: 12px; padding: 7px; color: #f5e5c6; }
 .bird-row .party-card-strip { padding-bottom: 3px; }

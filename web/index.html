@@ -12,6 +12,8 @@
   <link rel="stylesheet" href="./party.css?build=local">
   <link rel="stylesheet" href="./workshop.css?build=local">
   <script src="./config.js?build=local" defer></script>
+  <script src="./room-session.js?build=local" defer></script>
+  <script src="./table-art.js?build=local" defer></script>
   <script src="./app.js?build=local" defer></script>
   <script src="./party.js?build=local" defer></script>
   <script src="./workshop.js?build=local" defer></script>
@@ -70,7 +72,7 @@
 
     <section class="table-zone" aria-label="游戏牌桌">
       <div class="table-topline"><span id="phase-label">等待开局</span><span id="connection" class="connection">连接中…</span></div>
-      <div class="felt">
+      <div class="felt" data-public-table>
         <div class="felt-scribble left">小小的运气，<br>大大的快乐。 ✳</div>
         <div class="felt-scribble right">别慌，<br>只是概率问题。</div>
         <div class="piles">
@@ -81,7 +83,7 @@
           <div class="pile"><div id="discard-card" class="discard-empty">弃牌<br>堆</div><strong>弃牌堆</strong><span id="discard-count">— 张</span></div>
         </div>
       </div>
-      <div id="hand-area" class="hand-area"><div class="hand-heading"><h2>我的手牌</h2><div><span id="hand-hint">请选择一张牌</span><button id="zoom-card" type="button" hidden>放大选中牌</button></div></div><div id="hand" class="hand"></div></div>
+      <div id="hand-area" class="hand-area" data-private-hand><div class="hand-heading"><h2>我的手牌</h2><div><span id="hand-hint">请选择一张牌</span><button id="zoom-card" type="button" hidden>放大选中牌</button></div></div><div id="hand" class="hand"></div></div>
     </section>
 
     <aside class="right-rail">

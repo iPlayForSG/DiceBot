@@ -1,0 +1,123 @@
+{
+  "coup": {
+    "back": "public/assets/coup/images/180645c841405489.webp",
+    "roles": {
+      "公爵": "public/assets/coup/cards/deck-3-00.webp",
+      "上尉": "public/assets/coup/cards/deck-3-01.webp",
+      "刺客": "public/assets/coup/cards/deck-3-02.webp",
+      "女爵": "public/assets/coup/cards/deck-3-03.webp",
+      "大使": "public/assets/coup/cards/deck-3-04.webp",
+      "判官": "public/assets/coup/cards/deck-3-05.webp",
+      "弄臣": "public/assets/coup/cards/deck-3-06.webp",
+      "投机者": "public/assets/coup/cards/deck-3-07.webp",
+      "官僚": "public/assets/coup/cards/deck-3-08.webp"
+    },
+    "factions": {
+      "改革": "public/assets/coup/cards/deck-4-00.webp",
+      "秩序": "public/assets/coup/table/faction-order.webp"
+    },
+    "coin": "public/assets/coup/table/coin.webp",
+    "treasury": "public/assets/coup/images/b6711f4deffbeb37.webp"
+  },
+  "cubirds": {
+    "back": "public/assets/cubirds/images/6d81a1d5a604fe84.webp"
+  },
+  "splendor": {
+    "back": "public/assets/splendor/images/bf8e3698ab16a5cc.webp",
+    "gems": {
+      "w": "public/assets/splendor/table/gem-w.webp",
+      "u": "public/assets/splendor/table/gem-u.webp",
+      "g": "public/assets/splendor/table/gem-g.webp",
+      "r": "public/assets/splendor/table/gem-r.webp",
+      "b": "public/assets/splendor/table/gem-b.webp",
+      "j": "public/assets/splendor/table/gem-j.webp"
+    }
+  },
+  "avalon": {
+    "back": "public/assets/avalon/images/e3ad6796ff42539c.webp",
+    "choices": {
+      "success": "public/assets/avalon/cards/deck-4-07.webp",
+      "fail": "public/assets/avalon/cards/deck-4-03.webp",
+      "approve": "public/assets/avalon/cards/deck-5-00.webp",
+      "reject": "public/assets/avalon/cards/deck-5-13.webp"
+    },
+    "roles": {
+      "Assassin": "public/assets/avalon/cards/deck-3-00.webp",
+      "Loyal Servant of Arthur": "public/assets/avalon/cards/deck-3-06.webp",
+      "Oberon": "public/assets/avalon/cards/deck-3-13.webp",
+      "Minion of Mordred": "public/assets/avalon/cards/deck-3-09.webp",
+      "Morgana": "public/assets/avalon/cards/deck-3-12.webp",
+      "Percival": "public/assets/avalon/cards/deck-3-05.webp",
+      "Merlin": "public/assets/avalon/cards/deck-3-07.webp",
+      "Mordred": "public/assets/avalon/cards/deck-3-11.webp",
+      "success": "public/assets/avalon/cards/deck-4-06.webp",
+      "fail": "public/assets/avalon/cards/deck-4-01.webp",
+      "approve": "public/assets/avalon/cards/deck-5-08.webp",
+      "reject": "public/assets/avalon/cards/deck-5-19.webp"
+    }
+  },
+  "love-letter": {
+    "back": "public/assets/love-letter/images/4fb52c3567db2cd4.webp"
+  },
+  "once-upon-a-time": {
+    "back": "public/assets/once-upon-a-time/images/aa8ab8e48aaaca28.webp"
+  },
+  "flip-city": {
+    "back": "public/assets/flip-city/images/8f005b7b28ac6e06.webp"
+  },
+  "hanamikoji": {
+    "back": "public/assets/hanamikoji/images/dd176a053e23e7b8.webp",
+    "geishas": [
+      {
+        "name": "2※绚音/日式篠笛",
+        "image": "public/assets/hanamikoji/images/f5e10f328b2705b5.webp"
+      },
+      {
+        "name": "2※彩叶/舞扇",
+        "image": "public/assets/hanamikoji/images/2a50771126574658.webp"
+      },
+      {
+        "name": "2※知世/古书卷轴",
+        "image": "public/assets/hanamikoji/images/54385925488d8228.webp"
+      },
+      {
+        "name": "3※洋子/油纸伞",
+        "image": "public/assets/hanamikoji/images/f0970737968f7c79.webp"
+      },
+      {
+        "name": "3※千春/三味线",
+        "image": "public/assets/hanamikoji/images/1d6be2f3467e8677.webp"
+      },
+      {
+        "name": "4※杏树/茶具",
+        "image": "public/assets/hanamikoji/images/5cc07ac937541d2d.webp"
+      },
+      {
+        "name": "5※琉璃/樱花发簪",
+        "image": "public/assets/hanamikoji/images/b4fc00effea6d1c3.webp"
+      }
+    ],
+    "actions": {
+      "密约": "public/assets/hanamikoji/images/1b872be3dbe429a0.webp",
+      "取舍": "public/assets/hanamikoji/images/49d5bdea12f13f48.webp",
+      "赠予": "public/assets/hanamikoji/images/9fd886eb992b1f99.webp",
+      "竞争": "public/assets/hanamikoji/images/aaae85314c45074b.webp"
+    }
+  },
+  "exploding-kittens": {
+    "back": "public/assets/exploding-kittens/card-back.jpg"
+  },
+  "sushi-go": {
+    "back": "public/assets/sushi-go/images/268e69a375e053f0.webp"
+  },
+  "azul": {
+    "board": "public/assets/azul/images/f6b7379c5a970766.webp",
+    "tiles": {
+      "w": "public/assets/azul/images/21841d35927e0353.webp",
+      "u": "public/assets/azul/images/2f8a9935ae0f42cf.webp",
+      "g": "public/assets/azul/images/634e9aebb0b19bb5.webp",
+      "r": "public/assets/azul/images/7650f2fce901cb6e.webp",
+      "b": "public/assets/azul/images/ef00c97043bbfda2.webp"
+    }
+  }
+}

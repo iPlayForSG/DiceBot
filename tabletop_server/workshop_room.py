@@ -49,6 +49,13 @@ def _catalog(slug: str) -> tuple[dict[str, dict], list[str], list[str]]:
         cards[card_id] = {"id": card_id, "image": f"public/assets/{slug}/{obj['image']}",
                           "name": obj["name"] or f"卡牌 {index+1}", "group": group,
                           "card_id": obj["card_id"]}
+        if slug == "love-letter":
+            face = obj["card_id"] % 100
+            cards[card_id]["name"] = ("守卫" if face < 6 else "祭司" if face < 8 else
+                                     "男爵" if face < 10 else "侍女" if face < 12 else
+                                     "王子" if face < 14 else "国王" if face == 14 else
+                                     "女伯爵" if face == 15 else "公主" if face == 16 else
+                                     "间谍" if face < 19 else "大臣")
         if slug == "flip-city":
             alternate = by_path.get(obj["path"] + "/States/2")
             if alternate and alternate["image"]:
@@ -107,10 +114,11 @@ class WorkshopRoom:
         random.SystemRandom().shuffle(ending_deck)
         hands = {p.qq_id: [] for p in self.players}
         table = {p.qq_id: [] for p in self.players}
+        removed = []
         if self.game == "love-letter":
             deck.pop()  # Private set-aside card.
             if len(self.players) == 2:
-                for _ in range(3): deck.pop()
+                for _ in range(3): removed.append(deck.pop())
             for p in self.players: hands[p.qq_id].append(deck.pop())
         elif self.game == "once-upon-a-time":
             n = {2: 9, 3: 8, 4: 7, 5: 6, 6: 5}[len(self.players)]
@@ -135,7 +143,7 @@ class WorkshopRoom:
         self.state.update({"deck": deck, "ending_deck": ending_deck, "hands": hands, "table": table,
                       "discard": [], "current": 0, "round": 1,
                       "scores": {p.qq_id: 0 for p in self.players}, "chosen": {},
-                      "saved_puddings": {p.qq_id: [] for p in self.players}})
+                      "saved_puddings": {p.qq_id: [] for p in self.players}, "removed": removed})
         if self.game == "azul":
             self.state["tiles"] = {color: 20 for color in "wugrb"}
             self.state["factories"] = []
@@ -417,17 +425,22 @@ class WorkshopRoom:
                 "players": [{"id": p.qq_id, "name": p.name, "avatar": p.avatar, "alive": p.alive,
                              "claimed": bool(p.token), "cards": len(hands.get(p.qq_id, [])),
                              "score": self.state.get("scores", {}).get(p.qq_id, 0),
+                             "deckCount": len(self.state.get("personal_decks", {}).get(p.qq_id, [])) if self.game == "flip-city" else None,
+                             "deckTop": visible(self.state["personal_decks"][p.qq_id][-1]) if self.game == "flip-city" and self.state.get("personal_decks", {}).get(p.qq_id) else None,
+                             "discard": [visible(c) for c in self.state.get("personal_discard", {}).get(p.qq_id, [])] if self.game == "flip-city" else [],
+                             "puddingCards": [visible(c) for c in self.state.get("saved_puddings", {}).get(p.qq_id, [])] if self.game == "sushi-go" else [],
                              "puddings": len(self.state.get("saved_puddings", {}).get(p.qq_id, [])) +
                                          sum(self._card(c)["name"] == "布丁" for c in table.get(p.qq_id, [])) if self.game == "sushi-go" else 0,
                              "pattern": self.state.get("pattern", {}).get(p.qq_id, [[] for _ in range(5)]) if self.game == "azul" else [],
                              "wall": self.state.get("wall", {}).get(p.qq_id, []) if self.game == "azul" else [],
                              "tiles": self.state.get("player_tiles", {}).get(p.qq_id, []) if self.game == "azul" else [],
                              "table": [visible(c) for c in table.get(p.qq_id, [])]} for p in self.players],
-                "me": ({"id": qq_id, "hand": [visible(c) for c in hands.get(qq_id, [])],
+                "me": ({"id": qq_id, "name": self.player(qq_id).name, "hand": [visible(c) for c in hands.get(qq_id, [])],
                         "discard": [visible(c) for c in self.state.get("personal_discard", {}).get(qq_id, [])]} if qq_id else None),
                 "deckCount": (len(self.state.get("personal_decks", {}).get(qq_id, [])) if self.game == "flip-city" and qq_id else len(self.state.get("deck", []))),
                 "discardCount": (len(self.state.get("personal_discard", {}).get(qq_id, [])) if self.game == "flip-city" and qq_id else len(self.state.get("discard", []))),
                 "discardCards": [visible(c) for c in self.state.get("discard", [])[-30:]],
+                "removedCards": [visible(c) for c in self.state.get("removed", [])],
                 "market": market,
                 "factories": self.state.get("factories", []), "center": self.state.get("center", []),
                 "myTiles": self.state.get("player_tiles", {}).get(qq_id, []) if qq_id else [],
