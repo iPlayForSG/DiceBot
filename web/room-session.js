@@ -91,7 +91,7 @@ window.createRoomSession = function createRoomSession({api, code, initial, onVie
         }
       } else if (event.code === 1001) {
         onStatus("房间已关闭");
-        onError("房间已关闭，请在 QQ 群重新组局。");
+        onError(event.reason || "房间已关闭，请在 QQ 群重新组局。");
       } else {
         onStatus("● 连接中断，正在重连");
         retry = setTimeout(() => {

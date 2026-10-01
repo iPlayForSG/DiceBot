@@ -80,6 +80,7 @@ class WorkshopRoom:
     log: list[str] = field(default_factory=list)
     revision: int = 0
     created_at: float = field(default_factory=time.time)
+    last_activity_at: float = field(default_factory=time.time)
 
     def player(self, qq_id: str) -> Player:
         for player in self.players:

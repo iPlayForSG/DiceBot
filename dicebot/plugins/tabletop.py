@@ -77,6 +77,7 @@ async def handle_tabletop(bot: Bot, event: MessageEvent, args: Message = Command
                         f"{game_name}{'KS 角色包' if mode.startswith('ks-') else '扩展' if mode == 'reformation' else '进阶' if mode == 'advanced' else ''}房间已创建，房主 {name}。\n"
                         f"房间码：{data['code']}｜支持 {limit} 人。\n"
                         f"发送 /桌游 加入 {data['code']}。5 分钟内未开始会自动取消；房主可发送 /桌游 取消 {data['code']}。\n"
+                        "开局后连续 1 小时没有有效游戏操作，房间会自动回收。\n"
                         f"身份码已私聊房主。请确认本群已开启“允许群成员私聊”。\n"
                         f"游玩链接：{web_bridge.link(data['code'])}"
                     )
