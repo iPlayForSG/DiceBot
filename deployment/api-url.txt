@@ -1,1 +1,1 @@
-https://cycles-computation-winds-blackberry.trycloudflare.com
+https://45.192.248.100:8443

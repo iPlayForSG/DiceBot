@@ -1,0 +1,7 @@
+[Unit]
+Description=Renew DiceBot IP certificate
+After=network-online.target nginx.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/dicebot/certbot-venv/bin/certbot renew --quiet --cert-name dicebot-ip --deploy-hook "systemctl reload nginx"

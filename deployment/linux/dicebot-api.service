@@ -1,0 +1,24 @@
+[Unit]
+Description=DiceBot realtime tabletop API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=dicebot
+Group=dicebot
+WorkingDirectory=/opt/dicebot/current
+EnvironmentFile=/etc/dicebot/runtime.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/dicebot/venv/bin/python -m uvicorn tabletop_server.app:app --host 127.0.0.1 --port 8765 --workers 1 --proxy-headers --forwarded-allow-ips=127.0.0.1
+Restart=on-failure
+RestartSec=5
+MemoryMax=450M
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/dicebot
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target

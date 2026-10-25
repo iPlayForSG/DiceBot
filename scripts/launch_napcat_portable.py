@@ -37,6 +37,7 @@ def main() -> None:
         [str(root / "NapCatWinBootMain.exe"), str(root / "QQ.exe"),
          str(root / "NapCatWinBootHook.dll"), args.qq],
         cwd=root, env=environment,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
     ))
 
 

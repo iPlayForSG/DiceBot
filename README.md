@@ -100,31 +100,38 @@ uv run python scripts/import_tts.py "D:\Steam\steamapps\common\Tabletop Simulato
 
 如果只发布 GitHub Pages，静态页面会出现，但不能建房和实时游玩。发布依赖 GitHub 仓库权限和一个公网后端部署位置。
 
-### 用 Cloudflare Tunnel 暴露本机实时服务
+### 公网云服务器部署
 
-当前本机已安装 Cloudflare 官方 `cloudflared`。另开终端启动一个临时隧道：
+正式入口为 https://45.192.248.100:8443/，网站、实时 API 和 QQ Bot 都运行在云服务器；GitHub Pages 使用相同的 HTTPS API。服务器的 443 端口由现有服务占用，DiceBot 独立使用 8443。80 端口用于证书校验并跳转到游戏网站。
 
-```powershell
-cloudflared tunnel --url http://127.0.0.1:8765 --no-autoupdate
-```
+本机唯一开发与发布目录为 `D:\DiceBot`。NapCat/QQ 保留在 `D:\DiceBot\.local-tools\napcat-runtime`，通过 `wss://45.192.248.100:8443/onebot/v11/ws` 连接云端 Bot。本机须保持登录、联网且 QQ 在线，群内组局和身份码私聊才可用；网页牌局状态由云端保存。
 
-它会输出一个随机的 `https://...trycloudflare.com` 地址。把这个地址写入 `deployment/api-url.txt` 并推送，Pages 会自动发布；`.env` 的 `TABLETOP_ALLOWED_ORIGINS` 要包含 `https://iplayforsg.github.io`。本机实时服务和隧道进程需要一直运行。Cloudflare [将 Quick Tunnel 定位为测试用途](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/do-more-with-tunnels/trycloudflare/)；进程重启后地址可能变化，届时需要重新发布。
-
-在这台已保存 GitHub 凭据的电脑上，可用 `uv run python scripts/run_quick_demo.py` 一次启动 Bot、实时服务和临时隧道，并自动更新 Pages 地址文件。监督进程会定期检查公网 `/api/health`；连续三次失败时只重建临时隧道，并把新地址发布到 Pages。NapCat 仍需单独启动并登录。关闭该终端会停止这三个进程；电脑休眠或断网时，网页也无法继续联机。
-
-固定地址应使用 Cloudflare 账号中托管的域名创建**命名隧道**，把其 Public Hostname 的 HTTP 源指向 `127.0.0.1:8765`。云端仍以 HTTPS/WSS 对外。具体创建流程见 [Cloudflare 文档](https://developers.cloudflare.com/tunnel/features/locally-managed-tunnels/create-local-tunnel/)。
-
-### Windows 常驻主机
-
-目标机使用 `C:\Users\<用户>\DiceBot` 放项目和私有 `.env`，`C:\Users\<用户>\NapCatRuntime` 放独立 QQ/NapCat。部署工具 `scripts/bootstrap_remote.py` 和 `scripts/bootstrap_napcat.py` 会生成本机密钥与反向 WebSocket 配置；密码和令牌不会进入仓库。NapCat 的便携启动器为 `scripts/launch_napcat_portable.py`。
-
-目前无 Cloudflare 托管域名时，`scripts/run_quick_demo.py` 会在隧道重启后更新 `deployment/api-url.txt` 并推送到 GitHub，让 Pages 自动重发。远端使用**仅能写入本仓库的 GitHub 部署密钥**，不复制个人 GitHub 登录。首次配置完成后，可由管理员运行：
+在项目根目录运行：
 
 ```powershell
-./scripts/install_windows_tasks.ps1 -QQ <机器人QQ号>
+uv run --with paramiko python scripts/deploy_cloud.py
 ```
 
-这会登记两个仅在该 Windows 用户登录时启动的任务：游戏 API/Bot/临时隧道，以及 NapCat。电脑须保持登录、联网且不休眠；登录任务不能替代真正的常在线服务器。拥有 Cloudflare 域名后，再改成固定主机名的命名隧道。
+发布脚本按 `uv.lock` 导出运行依赖，仅上传代码、网站和部署文件；不上传本机工具、QQ 登录缓存、房间数据或密钥。SSH 私钥和固定的主机密钥保存在被 Git 忽略的 `.local-tools/cloud-deploy/`，运行配置保存在被忽略的 `.env.cloud`，密钥值不提交到 Git。
+
+云端代码发布到 `/opt/dicebot/releases/<版本>/`，`/opt/dicebot/current` 指向运行版本，Python 环境位于 `/opt/dicebot/venv`。房间和头像保存在 `/var/lib/dicebot`，服务配置位于 `/etc/dicebot/runtime.env`；代码发布不覆盖它们。
+
+`dicebot-api` 和 `dicebot-bot` 由 systemd 随开机启动，异常退出自动重启，以独立的 `dicebot` 用户运行。API 保持单进程，避免内存中的房间状态分裂。Nginx 提供静态资源、HTTPS 和 WebSocket，公网不开放 Bot 管理接口。IP 证书由 `dicebot-cert-renew.timer` 每天检查两次，并在续期后重载 Nginx。
+
+```bash
+systemctl status dicebot-api dicebot-bot nginx
+journalctl -u dicebot-api -u dicebot-bot -n 50
+systemctl list-timers dicebot-cert-renew.timer
+```
+
+本机仅保留 `DiceBot NapCat` 登录任务。需要重新登记任务时，在管理员 PowerShell 中运行：
+
+```powershell
+./scripts/install_windows_tasks.ps1 -QQ 3964573597
+```
+
+`deployment/api-url.txt` 是 GitHub Pages 的后端地址来源，部署模板位于 `deployment/linux/`。
+
 
 ## 验证
 

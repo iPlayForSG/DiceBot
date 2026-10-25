@@ -1,13 +1,15 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^\d+$')]
-    [string]$QQ
+    [string]$QQ,
+    [string]$Runtime
 )
 
 $ErrorActionPreference = 'Stop'
 $project = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$python = Join-Path $project '.venv\Scripts\python.exe'
-$runtime = Join-Path (Split-Path $project -Parent) 'NapCatRuntime'
+$python = Join-Path $project '.venv\Scripts\pythonw.exe'
+if (-not $Runtime) { $Runtime = Join-Path $project '.local-tools\napcat-runtime' }
+$runtime = (Resolve-Path -LiteralPath $Runtime).Path
 $account = [Security.Principal.WindowsIdentity]::GetCurrent().Name
 if (-not (Test-Path -LiteralPath $python)) { throw "Python environment is missing: $python" }
 if (-not (Test-Path -LiteralPath (Join-Path $runtime 'QQ.exe'))) { throw "Portable QQ is missing: $runtime" }
@@ -23,25 +25,11 @@ $settings = New-ScheduledTaskSettingsSet `
     -DontStopIfGoingOnBatteries `
     -MultipleInstances IgnoreNew
 
-$tasks = @(
-    @{
-        Name = 'DiceBot Stack'
-        Argument = ('"' + (Join-Path $project 'scripts\run_quick_demo.py') + '"')
-        Description = 'QQ tabletop API, bot, Quick Tunnel, and GitHub Pages URL updates.'
-    },
-    @{
-        Name = 'DiceBot NapCat'
-        Argument = ('"' + (Join-Path $project 'scripts\launch_napcat_portable.py') + '" --runtime "' + $runtime + '" --qq ' + $QQ)
-        Description = 'Portable NapCat QQ client for DiceBot.'
-    }
-)
-
-foreach ($task in $tasks) {
-    if (Get-ScheduledTask -TaskName $task.Name -ErrorAction SilentlyContinue) {
-        Write-Output "Existing task preserved: $($task.Name)"
-        continue
-    }
-    $action = New-ScheduledTaskAction -Execute $python -Argument $task.Argument -WorkingDirectory $project
-    Register-ScheduledTask -TaskName $task.Name -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description $task.Description | Out-Null
-    Write-Output "Installed task: $($task.Name)"
+$argument = ('"' + (Join-Path $project 'scripts\launch_napcat_portable.py') + '" --runtime "' + $runtime + '" --qq ' + $QQ)
+$action = New-ScheduledTaskAction -Execute $python -Argument $argument -WorkingDirectory $project
+if (Get-ScheduledTask -TaskName 'DiceBot NapCat' -ErrorAction SilentlyContinue) {
+    Set-ScheduledTask -TaskName 'DiceBot NapCat' -Action $action -Trigger $trigger -Principal $principal -Settings $settings | Out-Null
+} else {
+    Register-ScheduledTask -TaskName 'DiceBot NapCat' -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Local QQ client connected to the cloud DiceBot.' | Out-Null
 }
+Write-Output ('NapCat task uses ' + $project)

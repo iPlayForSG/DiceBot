@@ -3,3 +3,5 @@
 *.png binary
 *.jpg binary
 *.jpeg binary
+# Linux 服务文件跨 Windows 检出时必须保留 LF。
+deployment/linux/* text eol=lf
