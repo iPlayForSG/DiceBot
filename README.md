@@ -102,7 +102,7 @@ uv run python scripts/import_tts.py "D:\Steam\steamapps\common\Tabletop Simulato
 
 ### 公网云服务器部署
 
-正式入口为 https://45.192.248.100:8443/，网站、实时 API 和 QQ Bot 都运行在云服务器；GitHub Pages 使用相同的 HTTPS API。服务器的 443 端口由现有服务占用，DiceBot 独立使用 8443。80 端口用于证书校验并跳转到游戏网站。
+正式入口为 https://45.192.248.100:8443/，网站、实时 API 和桌游 QQ Bot 都运行在云服务器；GitHub Pages 使用相同的 HTTPS API。服务器的 443 端口由现有服务占用，DiceBot 独立使用 8443。80 端口用于证书校验并跳转到游戏网站。
 
 本机唯一开发与发布目录为 `D:\DiceBot`。NapCat/QQ 保留在 `D:\DiceBot\.local-tools\napcat-runtime`，通过 `wss://45.192.248.100:8443/onebot/v11/ws` 连接云端 Bot。本机须保持登录、联网且 QQ 在线，群内组局和身份码私聊才可用；网页牌局状态由云端保存。
 
@@ -124,7 +124,7 @@ journalctl -u dicebot-api -u dicebot-bot -n 50
 systemctl list-timers dicebot-cert-renew.timer
 ```
 
-本机仅保留 `DiceBot NapCat` 登录任务。需要重新登记任务时，在管理员 PowerShell 中运行：
+本机的 `DiceBot NapCat` 登录任务负责 QQ 接入。需要重新登记此任务时，在管理员 PowerShell 中运行：
 
 ```powershell
 ./scripts/install_windows_tasks.ps1 -QQ 3964573597
@@ -132,10 +132,31 @@ systemctl list-timers dicebot-cert-renew.timer
 
 `deployment/api-url.txt` 是 GitHub Pages 的后端地址来源，部署模板位于 `deployment/linux/`。
 
+### Bot 控制室与独立 AI Bot
+
+控制台位于 http://127.0.0.1:8790/，仅允许本机访问，提供“仅桌游、仅 AI、同时开启、全部关闭”四种模式及反代测试。桌游开关控制云端 `dicebot-bot`，不停止 `dicebot-api`，不清空网页房间；AI 开关控制独立的 Windows 任务 `DiceBot AstrBot`。选择会随开机启动设置保留。
+
+AstrBot 固定为 4.29.3，使用 `.local-tools/astrbot/venv` 中的 Python 3.12，其配置、会话、插件和日志均位于 `.local-tools/astrbot/runtime`。它通过第二个 NapCat WebSocket 客户端接入同一个 QQ：地址为 `ws://127.0.0.1:6199/ws`，令牌位于运行目录的 `onebot-token.txt`。原云端桌游连接保持独立。
+
+AI 仅处理 `/ai 你的问题`；隔离插件在请求模型前丢弃桌游命令和普通群聊。两个 Bot 的上下文与运行数据分别保存。AI 的本机设置面板为 http://127.0.0.1:6185/。
+
+DeepSeek 使用本机 WorkBuddy 网关 `http://127.0.0.1:8788/v1`，模型为 `deepseek-v4.1-flash`。启动器从 `D:\AI\workbuddy2api-hub\local-connection.json` 读取 API 密钥并通过环境变量交给 AstrBot，不向网页或云服务器传送网关凭据。网关限并发为 1，控制台测试和 QQ 对话共享该额度。
+
+在已安装独立 AstrBot 环境的机器上，准备控制台及登录任务：
+
+```powershell
+uv sync --extra dev --extra console
+uv run --extra console python scripts/setup_bot_console.py
+./scripts/install_bot_console_tasks.ps1
+```
+
+控制台和 AstrBot 分别由 `DiceBot Console`、`DiceBot AstrBot` 任务独立启动，不依赖 Codex 或浏览器保活。控制台密码、AstrBot 面板密码和 SSH 连接设置位于被 Git 忽略的 `.local-tools/bot-console/`。初始化入口不会将这些配置打包发布到云端。
+
 
 ## 验证
 
 ```powershell
-uv run pytest -q
+uv run --extra dev --extra console pytest -q
 node --check web/app.js
+node --check bot_console/web/console.js
 ```

@@ -12,6 +12,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "pillow>=11,<13", "pymongo>=4,<5"]
+console = ["paramiko>=3.5,<5"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

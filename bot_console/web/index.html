@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Bot 控制室</title>
+    <link rel="icon" href="/static/icon.svg" />
+    <link rel="stylesheet" href="/static/console.css" />
+    <script src="/static/console.js" defer></script>
+  </head>
+  <body>
+    <section id="login" class="login-view" hidden>
+      <div class="login-brand">
+        <span class="brand-mark" aria-hidden="true">◉</span> Bot 控制室
+      </div>
+      <form id="login-form">
+        <h1>管理你的 QQ 助手</h1>
+        <p>输入控制台密码，查看运行状态与切换 Bot。</p>
+        <label for="password">控制台密码</label
+        ><input
+          id="password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          required
+        /><button class="primary" type="submit">登录控制台</button>
+        <p id="login-error" class="error" role="alert"></p>
+        <small>仅允许本机访问 · 密码见控制台连接说明</small>
+      </form>
+    </section>
+    <div id="workspace" class="workspace" hidden>
+      <aside class="sidebar">
+        <a class="brand" href="/"
+          ><span class="brand-mark" aria-hidden="true">◉</span
+          ><span>Bot 控制室<small>桌游夜航</small></span></a
+        >
+        <nav aria-label="控制台导航">
+          <button class="nav-item active" data-page="control">
+            <span aria-hidden="true">◫</span>运行控制</button
+          ><button class="nav-item" data-page="proxy">
+            <span aria-hidden="true">◇</span>反代测试
+          </button>
+        </nav>
+        <div class="sidebar-bottom">
+          <span class="local-lock">本机专用</span>
+          <p>进程与数据分别保存<br />使用同一个 QQ 接入</p>
+          <button id="logout" class="text-button">退出登录</button>
+        </div>
+      </aside>
+      <main>
+        <header class="topbar">
+          <span>机器人工作区</span>
+          <div class="connection">
+            <span id="napcat-dot" class="dot"></span
+            ><span id="napcat-state">正在检查 NapCat</span>
+          </div>
+        </header>
+        <section id="control-page" class="page">
+          <div class="page-heading">
+            <div>
+              <h1>现在，让谁来响应？</h1>
+              <p>按需启用桌游与 AI。网页里的牌局会继续运行。</p>
+            </div>
+            <button id="refresh" class="secondary">刷新状态</button>
+          </div>
+          <div
+            class="mode-selector"
+            role="group"
+            aria-label="选择 Bot 运行模式"
+          >
+            <button data-mode="tabletop">
+              <span>仅桌游</span><small>专心组局</small></button
+            ><button data-mode="ai">
+              <span>仅 AI</span><small>聊天与问答</small></button
+            ><button data-mode="both">
+              <span>同时开启</span><small>各自响应指令</small></button
+            ><button data-mode="off">
+              <span>全部关闭</span><small>暂停 QQ 响应</small>
+            </button>
+          </div>
+          <div
+            id="operation"
+            class="operation"
+            role="status"
+            aria-live="polite"
+          >
+            正在读取实际运行状态…
+          </div>
+          <div class="bot-list">
+            <article class="bot-row">
+              <div class="bot-symbol dice-symbol" aria-hidden="true">
+                <i></i><i></i><i></i><i></i>
+              </div>
+              <div class="bot-main">
+                <div class="bot-title">
+                  <h2>桌游 Bot</h2>
+                  <span id="tabletop-status" class="badge pending">检查中</span>
+                </div>
+                <p>群内组局、身份码私聊，连接已有的网页牌桌。</p>
+                <dl>
+                  <div>
+                    <dt>响应指令</dt>
+                    <dd>/桌游</dd>
+                  </div>
+                  <div>
+                    <dt>运行位置</dt>
+                    <dd>云服务器</dd>
+                  </div>
+                </dl>
+                <p id="tabletop-error" class="error" hidden></p>
+              </div>
+              <button
+                id="tabletop-toggle"
+                class="toggle"
+                type="button"
+                role="switch"
+                aria-checked="false"
+                aria-label="启用桌游 Bot"
+              >
+                <span></span>
+              </button>
+            </article>
+            <article class="bot-row">
+              <div class="bot-symbol ai-symbol" aria-hidden="true">✦</div>
+              <div class="bot-main">
+                <div class="bot-title">
+                  <h2>AI Bot</h2>
+                  <span id="ai-status" class="badge pending">检查中</span>
+                </div>
+                <p>AstrBot 接入 DeepSeek Flash，保留独立的会话与插件。</p>
+                <dl>
+                  <div>
+                    <dt>响应指令</dt>
+                    <dd>/ai 你的问题</dd>
+                  </div>
+                  <div>
+                    <dt>运行位置</dt>
+                    <dd>本机独立环境</dd>
+                  </div>
+                </dl>
+                <p id="ai-error" class="error" hidden></p>
+              </div>
+              <button
+                id="ai-toggle"
+                class="toggle"
+                type="button"
+                role="switch"
+                aria-checked="false"
+                aria-label="启用 AI Bot"
+              >
+                <span></span>
+              </button>
+            </article>
+          </div>
+          <div class="bottom-grid">
+            <section class="isolation">
+              <h3>边界清楚，互不接管</h3>
+              <p>
+                桌游和 AI 分别管理自己的进程、依赖与会话。关闭桌游 Bot 只暂停 QQ
+                指令，不会关闭网站或清空房间。
+              </p>
+              <a
+                href="https://45.192.248.100:8443/"
+                target="_blank"
+                rel="noopener"
+                >打开桌游网站 <span aria-hidden="true">↗</span></a
+              >
+            </section>
+            <section class="activity">
+              <div class="section-heading">
+                <h3>最近操作</h3>
+                <span>本次控制台运行期间</span>
+              </div>
+              <ol id="events">
+                <li class="empty">还没有切换记录。</li>
+              </ol>
+            </section>
+          </div>
+        </section>
+        <section id="proxy-page" class="page" hidden>
+          <div class="page-heading">
+            <div>
+              <h1>验证 DeepSeek 连接</h1>
+              <p>通过本机 WorkBuddy 网关发送一条短消息。</p>
+            </div>
+            <span id="proxy-status" class="badge pending">检查中</span>
+          </div>
+          <div class="proxy-layout">
+            <form id="proxy-form" class="proxy-form">
+              <label for="prompt">测试消息</label
+              ><textarea id="prompt" maxlength="500" rows="5" required>
+只回复：连接成功</textarea
+              >
+              <p>一次只发送一个请求。测试会使用反代账号的额度。</p>
+              <button id="proxy-submit" class="primary" type="submit">
+                发送测试
+              </button>
+              <div
+                id="proxy-result"
+                class="proxy-result"
+                hidden
+                aria-live="polite"
+              >
+                <div id="result-meta"></div>
+                <pre id="result-content"></pre>
+              </div>
+            </form>
+            <aside class="proxy-details">
+              <h3>当前模型连接</h3>
+              <dl>
+                <dt>模型</dt>
+                <dd id="proxy-model">deepseek-v4.1-flash</dd>
+                <dt>API 地址</dt>
+                <dd id="proxy-base">http://127.0.0.1:8788/v1</dd>
+                <dt>认证</dt>
+                <dd>从本机配置读取，不向页面传送密钥。</dd>
+              </dl>
+              <p>
+                AI 会话与桌游房间分开保存。更换 Bot 不会把桌游数据发送给模型。
+              </p>
+            </aside>
+          </div>
+        </section>
+        <footer>
+          <span id="updated">状态尚未更新</span><span>Bot 控制室</span>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>
