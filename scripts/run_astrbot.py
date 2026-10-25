@@ -10,6 +10,7 @@ runtime = ROOT / '.local-tools/astrbot/runtime'
 runtime.mkdir(parents=True, exist_ok=True)
 os.environ['ASTRBOT_ROOT'] = str(runtime)
 os.chdir(runtime)
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(runtime))
 log = (runtime / 'managed.log').open('a', encoding='utf-8', buffering=1)
 sys.stdout = log

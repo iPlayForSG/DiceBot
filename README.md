@@ -152,6 +152,22 @@ uv run --extra console python scripts/setup_bot_console.py
 
 控制台和 AstrBot 分别由 `DiceBot Console`、`DiceBot AstrBot` 任务独立启动，不依赖 Codex 或浏览器保活。控制台密码、AstrBot 面板密码和 SSH 连接设置位于被 Git 忽略的 `.local-tools/bot-console/`。初始化入口不会将这些配置打包发布到云端。
 
+### DeepSeek Harness 入口
+
+`/ai harness 任务` 由 DeepSeek Harness 执行，普通 `/ai 问题` 继续使用 AstrBot 的对话流程。Harness 跟随 AI Bot 的开关，不影响桌游服务。`/ai harness 状态` 会返回当前成员在当前群的资料目录；将 txt、md、json、csv 或 tsv 文件放入该目录后，可以请求列目录、读取资料并分步分析。
+
+Harness 使用官方 NPM 运行时 `@deepseek-ai/dsh@0.2.1-rc.2` 的 SDK JSON-RPC 接口。安装到被 Git 忽略的 `.local-tools/harness`：
+
+```powershell
+./scripts/setup_harness.ps1
+```
+
+所有模型请求均通过 `http://127.0.0.1:8788/v1`，认证仍从既有 WorkBuddy 反代配置读取。桥接层拒绝其他端点，关闭官方 DeepSeek 适配器和会话日志上传；不加载个人 Harness 桌面端的账号或配置，不回退到官方 API。
+
+群与成员的组合生成独立会话目录，工作区位于 `.local-tools/harness/workspaces/<会话标识>`，Harness 配置和持续会话位于 `.local-tools/harness/homes/<会话标识>`。资料工具按真实文件路径检查边界，拒绝越界、符号链接或目录联接逃逸、隐藏文件，以及超过 24 KiB 的单个文件。当前只提供列目录、读取资料两个工具。每次任务使用独立子进程，完成后关闭；后续任务从同一成员的持久会话续接。
+
+本机反代的 Chat Completions 接口通过 Harness 的自定义 `dicebot-proxy` 提供商接入。模型依赖和 Node 运行时保留在本机，不部署到小云服务器。
+
 
 ## 验证
 
@@ -159,4 +175,5 @@ uv run --extra console python scripts/setup_bot_console.py
 uv run --extra dev --extra console pytest -q
 node --check web/app.js
 node --check bot_console/web/console.js
+node --test tests/room_session.test.cjs tests/harness_workspace.test.mjs
 ```

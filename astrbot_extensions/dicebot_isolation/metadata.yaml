@@ -1,6 +1,6 @@
 name: dicebot_isolation
 display_name: 桌游与 AI 消息隔离
-desc: AI 仅接收 /ai 消息，桌游指令与普通群聊不进入 AI 会话。
-version: v1.0.0
+desc: AI 仅接收 /ai 消息；/ai harness 使用本机反代执行隔离资料任务。
+version: v1.1.0
 author: DiceBot
 repo: https://github.com/iPlayForSG/DiceBot
