@@ -4,4 +4,4 @@ After=network-online.target nginx.service
 
 [Service]
 Type=oneshot
-ExecStart=/opt/dicebot/certbot-venv/bin/certbot renew --quiet --cert-name dicebot-ip --deploy-hook "systemctl reload nginx"
+ExecStart=/opt/dicebot/certbot-venv/bin/certbot renew --quiet --no-random-sleep-on-renew --cert-name dicebot-ip --deploy-hook "systemctl reload nginx"
