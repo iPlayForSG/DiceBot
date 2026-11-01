@@ -129,7 +129,7 @@ class Controller:
             except httpx.HTTPError:
                 pass
         enabled = (bots['tabletop']['enabled'], bots['ai']['enabled'])
-        mode = next((key for key, flags in MODES.items() if flags == enabled), 'off')
+        mode = next((key for key, flags in MODES.items() if flags == enabled), 'off') if all(bot['reachable'] for bot in bots.values()) else None
         self.cache = {'bots': bots, 'mode': mode, 'proxy': proxy, 'napcat': napcat,
                       'events': list(self.events), 'checkedAt': datetime.now(timezone.utc).isoformat()}
         self.cache_until = time.monotonic() + 4
@@ -195,6 +195,24 @@ class Controller:
             self.cache_until = 0
             return await self.snapshot(force=True)
 
+    async def set_bot(self, name: str, enabled: bool):
+        async with self.lock:
+            before=await self._actual()
+            if not before[name]['reachable']:
+                raise RuntimeError('该 Bot 的状态不可用，未执行操作。')
+            # 单个 Bot 的所有权独立，另一端失联不得阻止本机 AI 的启停。
+            if before[name]['enabled'] != enabled:
+                try:
+                    await self._set(name,enabled)
+                except Exception:
+                    try:await self._set(name,before[name]['enabled'])
+                    except Exception:self.record('该 Bot 的状态恢复失败，请检查运行状态。')
+                    self.cache_until=0
+                    raise
+            self.record(('AI Bot' if name=='ai' else '桌游 Bot')+(' 已开启' if enabled else ' 已关闭'))
+            self.cache_until=0
+            return await self.snapshot(force=True)
+
     async def test_proxy(self, prompt: str):
         if self.test_lock.locked():
             raise RuntimeError('已有反代测试进行中，请稍候。')
@@ -222,6 +240,10 @@ class Login(BaseModel):
 
 class Mode(BaseModel):
     mode: str
+
+
+class BotState(BaseModel):
+    enabled: bool = Field(strict=True)
 
 
 class Prompt(BaseModel):
@@ -301,6 +323,15 @@ def create_app(settings: Settings | None = None, controller: Controller | None =
             return await controller.test_proxy(value.prompt)
         except Exception:
             raise HTTPException(503, '反代测试失败，请确认网关在线、账号可用且当前没有其他请求。') from None
+
+    @app.post('/api/bots/{name}', dependencies=[Depends(authenticated), Depends(origin)])
+    async def bot(name: str, value: BotState):
+        if name not in ('ai','tabletop'):
+            raise HTTPException(422,'未知的 Bot。')
+        try:
+            return await controller.set_bot(name,value.enabled)
+        except Exception as error:
+            raise HTTPException(503,str(error)) from None
 
     app.mount('/static', StaticFiles(directory=Path(__file__).parent/'web'), name='static')
     return app

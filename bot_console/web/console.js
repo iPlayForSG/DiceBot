@@ -88,6 +88,7 @@ function render(value) {
   $("updated").textContent =
     "上次检查 " +
     new Date(value.checkedAt).toLocaleTimeString("zh-CN", { hour12: false });
+  disableControls(busy);
 }
 async function refresh(manual = true) {
   if (busy) return;
@@ -95,7 +96,11 @@ async function refresh(manual = true) {
     const value = await request("/api/status");
     showWorkspace();
     render(value);
-    if (manual) {
+    if (value.mode === null) {
+      $("operation").className = "operation error";
+      $("operation").textContent =
+        "部分 Bot 状态未知，仍可独立操作可连接的 Bot。";
+    } else if (manual) {
       $("operation").className = "operation";
       $("operation").textContent = "已读取实际运行状态。";
     }
@@ -107,9 +112,32 @@ async function refresh(manual = true) {
   }
 }
 function disableControls(value) {
+  const connected =
+    snapshot && Object.values(snapshot.bots).every((bot) => bot.reachable);
   document
-    .querySelectorAll("[data-mode],.toggle,#refresh")
-    .forEach((button) => (button.disabled = value));
+    .querySelectorAll("[data-mode]")
+    .forEach((button) => (button.disabled = value || !connected));
+  for (const name of ["tabletop", "ai"])
+    $(name + "-toggle").disabled = value || !snapshot?.bots[name].reachable;
+  $("refresh").disabled = value;
+}
+async function changeBot(name, enabled) {
+  if (busy || !snapshot) return;
+  busy = true;
+  disableControls(true);
+  $("operation").className = "operation";
+  $("operation").textContent = "正在更新该 Bot，请稍候…";
+  try {
+    render(await request("/api/bots/" + name, { enabled }));
+    $("operation").textContent =
+      (name === "ai" ? "AI Bot" : "桌游 Bot") + " 状态已更新。";
+  } catch (error) {
+    $("operation").className = "operation error";
+    $("operation").textContent = error.message;
+  } finally {
+    busy = false;
+    disableControls(false);
+  }
 }
 async function changeMode(mode) {
   if (busy || !snapshot) return;
@@ -136,20 +164,7 @@ document
 for (const name of ["tabletop", "ai"])
   $(name + "-toggle").addEventListener("click", () => {
     if (!snapshot) return;
-    const flags = {
-      tabletop: snapshot.bots.tabletop.enabled,
-      ai: snapshot.bots.ai.enabled,
-    };
-    flags[name] = !flags[name];
-    changeMode(
-      flags.tabletop
-        ? flags.ai
-          ? "both"
-          : "tabletop"
-        : flags.ai
-          ? "ai"
-          : "off",
-    );
+    changeBot(name, !snapshot.bots[name].enabled);
   });
 $("login-form").addEventListener("submit", async (event) => {
   event.preventDefault();

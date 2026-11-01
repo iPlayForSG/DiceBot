@@ -13,9 +13,10 @@ class FakeController(Controller):
         self.flags = {'tabletop': False, 'ai': False}
         self.calls = []
         self.fail_ai = False
+        self.cloud_reachable = True
 
     async def _actual(self):
-        return {key:{'enabled':value, 'reachable':True} for key,value in self.flags.items()}
+        return {key:{'enabled':value, 'reachable':self.cloud_reachable if key=='tabletop' else True} for key,value in self.flags.items()}
 
     async def _set(self, bot, enabled):
         self.calls.append((bot, enabled))
@@ -97,3 +98,29 @@ def test_login_rate_limit_is_enforced(console):
     for _ in range(5):
         assert client.post('/api/login',json={'password':'wrong'},headers={'Origin':'http://testserver'}).status_code==401
     assert client.post('/api/login',json={'password':'wrong'},headers={'Origin':'http://testserver'}).status_code==429
+
+
+def test_ai_switch_is_independent_when_cloud_is_unreachable(console):
+    client,controller=console
+    controller.cloud_reachable=False
+    authenticate(client)
+    for enabled in (True,False):
+        response=client.post('/api/bots/ai',json={'enabled':enabled},headers={'Origin':'http://testserver'})
+        assert response.status_code==200
+        assert controller.flags['ai']==enabled
+    assert all(name=='ai' for name,_ in controller.calls)
+
+
+def test_global_mode_does_not_guess_unreachable_cloud_state(console):
+    client,controller=console
+    controller.cloud_reachable=False
+    authenticate(client)
+    assert client.post('/api/mode',json={'mode':'both'},headers={'Origin':'http://testserver'}).status_code==503
+    assert controller.calls==[]
+
+
+def test_unknown_bot_cannot_select_arbitrary_service(console):
+    client,controller=console
+    authenticate(client)
+    assert client.post('/api/bots/other-service',json={'enabled':True},headers={'Origin':'http://testserver'}).status_code==422
+    assert controller.calls==[]
