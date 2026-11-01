@@ -51,7 +51,9 @@ class HarnessClient:
 
     async def start(self):
         validate_proxy_route(self.proxy)
-        node = shutil.which('node') or 'C:/Program Files/nodejs/node.exe'
+        # Harness 的本机运行时随部署迁移，避免宿主全局 Node 版本改变原依赖。
+        portable_node = ROOT / '.local-tools/node/node.exe'
+        node = str(portable_node) if portable_node.is_file() else shutil.which('node') or 'C:/Program Files/nodejs/node.exe'
         executable = RUNTIME / 'node_modules/@deepseek-ai/dsh/lib/bin.js'
         if not executable.is_file():
             raise HarnessError('Harness 运行环境尚未安装。')
