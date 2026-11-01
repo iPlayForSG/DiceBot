@@ -19,6 +19,7 @@ from fastapi.staticfiles import StaticFiles
 import httpx
 import paramiko
 from pydantic import BaseModel, Field
+from bot_console.network import open_http_tunnel
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE = ROOT / '.local-tools' / 'bot-console'
@@ -44,10 +45,14 @@ class Settings:
     proxy_config: str
     state_dir: Path = STATE
     task: str = 'DiceBot AstrBot'
+    cloud_proxy: str | None = None
 
     @classmethod
     def load(cls):
         values = json.loads((STATE / 'settings.json').read_text(encoding='utf-8'))
+        network=STATE/'network.json'
+        if network.exists():
+            values['cloud_proxy']=json.loads(network.read_text(encoding='utf-8')).get('cloud_proxy')
         return cls(**values)
 
 
@@ -68,9 +73,12 @@ class Controller:
         client = paramiko.SSHClient()
         client.load_host_keys(self.settings.cloud_known_hosts)
         client.set_missing_host_key_policy(paramiko.RejectPolicy())
+        channel=None
         try:
+            if self.settings.cloud_proxy:
+                channel=open_http_tunnel(self.settings.cloud_proxy,self.settings.cloud_host,22)
             client.connect(self.settings.cloud_host, username='root', key_filename=self.settings.cloud_key,
-                           allow_agent=False, look_for_keys=False, timeout=6, auth_timeout=6)
+                           allow_agent=False, look_for_keys=False, timeout=6, auth_timeout=6,sock=channel)
             _, out, _ = client.exec_command(command, timeout=15)
             out.channel.set_combine_stderr(True)
             output = out.read().decode('utf-8', errors='replace').strip()
@@ -79,6 +87,7 @@ class Controller:
             return output
         finally:
             client.close()
+            if channel:channel.close()
 
     def _task(self, action: str) -> str:
         scripts = {

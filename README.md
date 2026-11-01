@@ -136,6 +136,8 @@ systemctl list-timers dicebot-cert-renew.timer
 
 控制台位于 http://127.0.0.1:8790/，仅允许本机访问，提供“仅桌游、仅 AI、同时开启、全部关闭”四种模式及反代测试。桌游开关控制云端 `dicebot-bot`，不停止 `dicebot-api`，不清空网页房间；AI 开关控制独立的 Windows 任务 `DiceBot AstrBot`。选择会随开机启动设置保留。
 
+云端失联时，控制台将云状态显示为未知，暂停四种全局预设；可连接的单个 Bot 仍可用各自开关独立启停，不把网络故障当成“已关闭”。
+
 AstrBot 固定为 4.29.3，使用 `.local-tools/astrbot/venv` 中的 Python 3.12，其配置、会话、插件和日志均位于 `.local-tools/astrbot/runtime`。它通过第二个 NapCat WebSocket 客户端接入同一个 QQ：地址为 `ws://127.0.0.1:6199/ws`，令牌位于运行目录的 `onebot-token.txt`。原云端桌游连接保持独立。
 
 AI 仅处理 `/ai 你的问题`；隔离插件在请求模型前丢弃桌游命令和普通群聊。两个 Bot 的上下文与运行数据分别保存。AI 的本机设置面板为 http://127.0.0.1:6185/。
@@ -167,6 +169,12 @@ Harness 使用官方 NPM 运行时 `@deepseek-ai/dsh@0.2.1-rc.2` 的 SDK JSON-RP
 群与成员的组合生成独立会话目录，工作区位于 `.local-tools/harness/workspaces/<会话标识>`，Harness 配置和持续会话位于 `.local-tools/harness/homes/<会话标识>`。资料工具按真实文件路径检查边界，拒绝越界、符号链接或目录联接逃逸、隐藏文件，以及超过 24 KiB 的单个文件。当前只提供列目录、读取资料两个工具。每次任务使用独立子进程，完成后关闭；后续任务从同一成员的持久会话续接。
 
 本机反代的 Chat Completions 接口通过 Harness 的自定义 `dicebot-proxy` 提供商接入。模型依赖和 Node 运行时保留在本机，不部署到小云服务器。
+
+### 应用级云连接
+
+当云服务器需要通过 Hy2 访问时，目标机器的 `.local-tools/bot-console/network.json` 可设置 `cloud_proxy` 为专用回环 HTTP 代理。该机器使用 `http://127.0.0.1:17897`，由独立的 `Cloud-Hy2-Proxy` 任务提供；不设置全局环境代理，不影响本机模型反代或 QQ 自身的网络。
+
+控制台的云端 SSH 通过 HTTP CONNECT 承载，仍固定校验原服务器的主机密钥。`DiceBot CloudLink` 任务运行 `scripts/run_cloud_link.py`，仅监听 `127.0.0.1:18380`，接收原 QQ 账号和 OneBot 令牌匹配的连接，再通过此代理转接到固定云端 WSS；TLS 证书校验保持启用。NapCat 的云端客户端指向 `ws://127.0.0.1:18380/onebot/v11/ws`，本机 AI 的 `6199/ws` 连接保持独立。
 
 
 ## 验证
