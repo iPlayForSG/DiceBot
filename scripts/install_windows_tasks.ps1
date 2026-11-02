@@ -2,7 +2,8 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^\d+$')]
     [string]$QQ,
-    [string]$Runtime
+    [string]$Runtime,
+    [string]$QQExecutable
 )
 
 $ErrorActionPreference = 'Stop'
@@ -26,6 +27,7 @@ $settings = New-ScheduledTaskSettingsSet `
     -MultipleInstances IgnoreNew
 
 $argument = ('"' + (Join-Path $project 'scripts\launch_napcat_portable.py') + '" --runtime "' + $runtime + '" --qq ' + $QQ)
+if($QQExecutable){$argument += (' --qq-executable "'+(Resolve-Path -LiteralPath $QQExecutable).Path+'"')}
 $action = New-ScheduledTaskAction -Execute $python -Argument $argument -WorkingDirectory $project
 if (Get-ScheduledTask -TaskName 'DiceBot NapCat' -ErrorAction SilentlyContinue) {
     Set-ScheduledTask -TaskName 'DiceBot NapCat' -Action $action -Trigger $trigger -Principal $principal -Settings $settings | Out-Null
